@@ -416,11 +416,26 @@
 
 #define sound_get_frequency
 
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency"),7)
+
+
 #define sound_get_instance_count
 
 #define sound_get_instance_list
 
 #define sound_get_length
+
+#define sound_get_loop_a
+    ///sound_get_loop_a(ind)
+    
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_a"),5)
+
+
+#define sound_get_loop_b
+    ///sound_get_loop_b(ind)
+    
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_b"),6)
+
 
 #define sound_get_volume
     ///sound_get_volume(ind)
@@ -445,9 +460,23 @@
     
 #define sound_set_pos
     ///sound_set_pos(index,pos)
-    
+
+
 #define sound_set_loop
-    ///sound_set_loop(index,a,b,[unit])
+    ///sound_set_loop(index,a,[b],[unit])
+    //index: sound instance
+    //a: loop start in seconds
+    //b (optional): loop end in seconds
+    //Sets the loop points to use when playing a sound with looping enabled.
+    //When B isn't supplied, it is set to the end of the file.
+
+    //TODO: handle units
+    var __freq;
+    __freq = sound_get_frequency(argument0);
+    __dsound_setter(__dsound_name_parser(argument0,"sound_set_loop"),3,round(argument1 * __freq))
+    if (argument_count >= 3) __dsound_setter(__dsound_name_parser(argument0,"sound_set_loop"),4,round(argument2 * __freq))
+    else __dsound_setter(__dsound_name_parser(argument0,"sound_set_loop"),4,-1)
+
 
 #define sound_pause
     ///sound_pause(index)
