@@ -27,18 +27,18 @@
 
 
 #define __dsound_name_parser
-    //(index,funcname)
+    //(index,funcname,noerror)
     //converts a string name to sound index,
     //for "filename" sound id support à la 8.2 Sound
     
     if (is_string(argument0)) {
         if (ds_map_exists(__dsound_map,argument0)) return ds_map_find_value(__dsound_map,argument0)
-        __dsound_error(argument1,"Sound name ("+string(argument0)+") doesn't exist.")
+        if (!argument2) __dsound_error(argument1,"Sound name ("+string(argument0)+") doesn't exist.")
         return noone
     }
     
     if (!sound_exists(argument0)) {
-        __dsound_error(argument1,"Sound index ("+string(argument0)+") doesn't exist.")
+        if (!argument2) __dsound_error(argument1,"Sound index ("+string(argument0)+") doesn't exist.")
         return noone
     }
     
@@ -105,7 +105,7 @@
 #define sound_get_kind
     ///sound_get_kind(ind)  
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_kind"),__dsound_etter_kind)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_kind",false),__dsound_etter_kind)
 
 
 #define sound_get_name
@@ -124,7 +124,7 @@
 #define sound_get_preload
     ///sound_get_preload(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_preload"),__dsound_etter_preload)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_preload",false),__dsound_etter_preload)
 
 
 #define sound_global_volume
@@ -136,31 +136,31 @@
 #define sound_loop
     ///sound_loop(index)
     
-    return __dsound_play(__dsound_name_parser(argument0,"sound_loop"),1,1,0,1,0)
+    return __dsound_play(__dsound_name_parser(argument0,"sound_loop",false),1,1,0,1,0)
 
 
 #define sound_play
     ///sound_play(index)   
     
-    return __dsound_play(__dsound_name_parser(argument0,"sound_play"),0,1,0,1,0)
+    return __dsound_play(__dsound_name_parser(argument0,"sound_play",false),0,1,0,1,0)
 
 
 #define sound_isplaying
     ///sound_isplaying(index)
     
-    return __dsound_insts(__dsound_name_parser(argument0,"sound_isplaying"))
+    return __dsound_insts(__dsound_name_parser(argument0,"sound_isplaying",true))
 
 
 #define sound_volume
     ///sound_volume(index,value)
     
-    __dsound_setter(__dsound_name_parser(argument0,"sound_volume"),0,argument1)
+    __dsound_setter(__dsound_name_parser(argument0,"sound_volume",false),0,argument1)
 
 
 #define sound_pan
     ///sound_pan(index,value)
     
-    __dsound_setter(__dsound_name_parser(argument0,"sound_pan"),1,argument1)
+    __dsound_setter(__dsound_name_parser(argument0,"sound_pan",false),1,argument1)
 
 
 #define sound_fade
@@ -170,7 +170,7 @@
 #define sound_stop
     ///sound_stop(index)
     
-    __dsound_stop(__dsound_name_parser(argument0,"sound_stop"))
+    __dsound_stop(__dsound_name_parser(argument0,"sound_stop",true))
 
     
 #define sound_stop_all
@@ -337,7 +337,7 @@
     
     var __index,__name;
     
-    __index=__dsound_name_parser(argument0,"sound_set_name")
+    __index=__dsound_name_parser(argument0,"sound_set_name",false)
     
     if (__index!=noone) {    
         __name=ds_map_find_value(__dsound_rev_map,__index)
@@ -360,7 +360,7 @@
     ///sound_set_persistent(index,persistent)
     
     var __index;
-    __index=__dsound_name_parser(argument0,"sound_set_persistent")
+    __index=__dsound_name_parser(argument0,"sound_set_persistent",false)
     if (__index!=noone) {
         ds_map_set(__dsound_prs_map,__index,!!argument1)
     }
@@ -371,7 +371,7 @@
     
     var __snd;
     
-    __snd=__dsound_name_parser(argument0,"sound_loop_ext")
+    __snd=__dsound_name_parser(argument0,"sound_loop_ext",false)
     
     if (argument5) __dsound_stop(__snd)
     return __dsound_play(__snd,1,argument1,argument2,argument3,argument4)
@@ -382,7 +382,7 @@
     
     var __snd;
     
-    __snd=__dsound_name_parser(argument0,"sound_play_ext")
+    __snd=__dsound_name_parser(argument0,"sound_play_ext",false)
     
     if (argument5) __dsound_stop(__snd)
     return __dsound_play(__snd,0,argument1,argument2,argument3,argument4)
@@ -415,13 +415,13 @@
 #define sound_pitch
     ///sound_pitch(index,value)
     
-    __dsound_setter(__dsound_name_parser(argument0,"sound_pitch"),__dsound_etter_pitch,argument1)
+    __dsound_setter(__dsound_name_parser(argument0,"sound_pitch",false),__dsound_etter_pitch,argument1)
 
 
 #define sound_get_frequency
     ///sound_get_frequency(ind)
 
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency"),__dsound_etter_frequency)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency",false),__dsound_etter_frequency)
 
 
 #define sound_get_instance_count
@@ -431,31 +431,31 @@
 #define sound_get_loop_a
     ///sound_get_loop_a(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_a"),__dsound_etter_loopa)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_a",false),__dsound_etter_loopa)
 
 
 #define sound_get_loop_b
     ///sound_get_loop_b(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_b"),__dsound_etter_loopb)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_b",false),__dsound_etter_loopb)
 
 
 #define sound_get_volume
     ///sound_get_volume(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_volume"),__dsound_etter_volume)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_volume",false),__dsound_etter_volume)
 
 
 #define sound_get_pan
     ///sound_get_pan(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pan"),__dsound_etter_pan)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pan",false),__dsound_etter_pan)
 
 
 #define sound_get_pitch
     ///sound_get_pitch(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pitch"),__dsound_etter_pitch)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pitch",false),__dsound_etter_pitch)
 
 
 #define sound_get_length
@@ -463,7 +463,7 @@
     
     var __len;
     
-    __len=__dsound_getter(__dsound_name_parser(argument0,"sound_get_length"),__dsound_etter_length)
+    __len=__dsound_getter(__dsound_name_parser(argument0,"sound_get_length",false),__dsound_etter_length)
     
     if (argument_count<2) return __len/__dsound_getter(__snd,__dsound_etter_frequency)
     
@@ -491,7 +491,7 @@
         exit
     }
     
-    __snd=__dsound_name_parser(argument0,"sound_set_loop")
+    __snd=__dsound_name_parser(argument0,"sound_set_loop",false)
     if (__snd<0) exit
     
     if (argument_count>3) __unit=argument3 else __unit=unit_seconds
@@ -521,13 +521,13 @@
 #define sound_pause
     ///sound_pause(index)
     //Pauses a sound instance. If a sound index is passed, all instances of the sound will be paused.
-    __dsound_setpause(__dsound_name_parser(argument0,"sound_pause"),1)
+    __dsound_setpause(__dsound_name_parser(argument0,"sound_pause",false),1)
 
 
 #define sound_resume
     ///sound_resume(index)
     //Resumes a sound instance. If a sound index is passed, all instances of the sound will be resumed.
-    __dsound_setpause(__dsound_name_parser(argument0,"sound_resume"),0)
+    __dsound_setpause(__dsound_name_parser(argument0,"sound_resume",false),0)
 
 
 #define sound_pause_all

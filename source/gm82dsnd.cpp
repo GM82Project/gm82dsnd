@@ -157,6 +157,7 @@ extern void debug_message(const wchar_t* msg, int value) {
         int inst_count;
         int frequency;
         int kind;
+        int posmul;
         int loop_a;
         int loop_b;
         int length;
@@ -176,7 +177,6 @@ extern void debug_message(const wchar_t* msg, int value) {
         int fade_length;
         int fade_amount;
         int age;
-        int posmul;
         int loop_a;
         int loop_b;
         float volume;
