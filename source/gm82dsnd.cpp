@@ -246,6 +246,8 @@ extern void debug_message(const wchar_t* msg, int value) {
 
 //instance control
     int dsound_play(int, bool, double, double, double);
+    bool dsound_exists(int);
+    void dsound_stop(int);
     void dsound_inst_start(SoundInstance*);
     void dsound_inst_stop(int);
     void dsound_inst_free(SoundInstance*);
@@ -311,7 +313,7 @@ int system_get_primary_samplerate() {
     HRESULT hr;
     IMMDevice * pDevice = NULL;
     IMMDeviceEnumerator * pEnumerator = NULL;
-    IPropertyStore* store = nullptr;
+    IPropertyStore* store = NULL;
     PWAVEFORMATEX deviceFormatProperties;
     PROPVARIANT prop;
 
@@ -368,12 +370,7 @@ GMREAL __dsound_play(double index, double loop, double vol, double pan, double p
 }
 
 GMREAL __dsound_stop(double index) {
-    if (index < 0) return 0;
-    if (index >= RESOURCE_COUNT) {
-        dsound_inst_stop((int)index);
-        return 0;
-    }
-    dsound_sound_stop((int)index);
+    dsound_stop((int)index);
     return 0;
 }
 
@@ -383,16 +380,7 @@ GMREAL __dsound_glob_vol(double vol) {
 }
 
 GMREAL __dsound_exists(double index) {
-    if (index < 0) return 0;
-    if (index >= RESOURCE_COUNT) {
-        int kind, iid;
-        SoundInstance* inst = NULL;
-        if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
-            return inst -> exists?1:0;
-        }
-        return 0;
-    }
-    return sound_resources[(int)index].exists?1:0;
+    return dsound_exists((int)index)?1:0;
 }
 
 GMREAL __dsound_setter(double index, double op, double value) {
@@ -400,7 +388,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
     
     if (index >= RESOURCE_COUNT) {
         int kind, iid;
-        SoundInstance* inst = NULL;
+        SoundInstance* inst;
         if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
             switch ((int)op) {
                 case 0: inst->volume = value; break;
@@ -432,7 +420,7 @@ GMREAL __dsound_getter(double index, double op) {
     
     if (index >= RESOURCE_COUNT) {
         int kind, iid;
-        SoundInstance* inst = NULL;
+        SoundInstance* inst;
         if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
             switch ((int)op) {
                 case 0: return inst->volume;
@@ -493,7 +481,7 @@ GMREAL __dsound_setpause(double index, double pause) {
 
 GMREAL __dsound_getbgid() {
     int kind,index;
-    SoundInstance* inst = NULL;
+    SoundInstance* inst;
     if (dsound_instance_from_iid(BGM_INST_ID, &kind, &index, &inst)) {
         return (double)BGM_INST_ID;
     }
@@ -665,7 +653,7 @@ int dsound_sound_from_instance(int unknown_id) {
     if (unknown_id >= RESOURCE_COUNT) {
         //is instance; verify
         int kind, iid;
-        SoundInstance* inst = NULL;
+        SoundInstance* inst;
         if (dsound_instance_from_iid(unknown_id, &kind, &iid, &inst)) {
             return inst -> sound -> index;
         } else {
@@ -1074,6 +1062,25 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     return inst->index;
 }
 
+bool dsound_exists(int index) {
+    if (index < 0) return 0;
+    if (index >= RESOURCE_COUNT) {
+        int kind, iid;
+        SoundInstance* inst;
+        if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
+            return inst -> exists;
+        }
+        return false;
+    }
+    return sound_resources[(int)index].exists;
+}
+
+void dsound_stop(int index) {
+    if (index < 0) return;
+    if (index >= RESOURCE_COUNT) dsound_inst_stop(index);
+    else dsound_sound_stop(index);
+}
+
 void dsound_inst_start(SoundInstance* inst) {
     if (inst->looping) {
         vibe_check(
@@ -1090,7 +1097,7 @@ void dsound_inst_stop(int iid) {
     //stops an instance given its instance id
     
     int kind,index;
-    SoundInstance* inst = NULL;
+    SoundInstance* inst;
     
     if (dsound_instance_from_iid(iid, &kind, &index, &inst)) {
         dsound_inst_free(inst);
