@@ -428,8 +428,6 @@
 
 #define sound_get_instance_list
 
-#define sound_get_length
-
 #define sound_get_loop_a
     ///sound_get_loop_a(ind)
     
