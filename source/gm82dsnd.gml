@@ -424,6 +424,12 @@
     return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency",false),__dsound_etter_frequency)
 
 
+#define sound_get_max_pitch
+    ///sound_get_max_pitch(ind)
+
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_max_pitch",false),__dsound_etter_maxpitch)
+
+
 #define sound_get_instance_count
 
 #define sound_get_instance_list

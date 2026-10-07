@@ -165,6 +165,7 @@ extern void debug_message(const wchar_t* msg, int value) {
         float volume;
         float pan;
         float pitch;
+        float maxpitch;
         bool exists = false;
         bool loaded;
         bool persistent;
@@ -217,6 +218,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     int MM_INST_ID = -4;
     int BUILTIN_COUNT = 0;
     int SYSTEM_SAMPLE_RATE = 48000;
+    int MAX_SAMPLE_RATE;
     
     bool SET_LIN_VOLUME = true;
     bool SET_SCHEDULER = true;
@@ -395,7 +397,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
             switch ((int)op) {
                 case 0: inst->volume = min(1.0,max(0.0,value)); break;
                 case 1: inst->pan    = min(1.0,max(-1.0,value)); break;
-                case 2: inst->pitch  = min(3.0,max(0.0,value)); break;
+                case 2: inst->pitch  = min(inst->sound->maxpitch,max(0.0,value)); break;
                 case 5: inst->loop_a = (int)value; break;
                 case 6: inst->loop_b = (int)value; break;
             }
@@ -409,7 +411,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
     switch ((int)op) {
         case 0: sound_resources[(int)index].volume = min(1.0,max(0.0,value)); break;
         case 1: sound_resources[(int)index].pan    = min(1.0,max(-1.0,value)); break;
-        case 2: sound_resources[(int)index].pitch  = min(3.0,max(0.0,value)); break;
+        case 2: sound_resources[(int)index].pitch  = min(sound_resources[(int)index].maxpitch,max(0.0,value)); break;
         case 5: sound_resources[(int)index].loop_a = (int)value; break;
         case 6: sound_resources[(int)index].loop_b = (int)value; break;
     }
@@ -435,6 +437,7 @@ GMREAL __dsound_getter(double index, double op) {
                 case 7: return (double)inst->sound->frequency;
                 case 8: return (double)inst->sound->length;
                 case 9: return (double)inst->loop_c;
+                case 10: return (double)inst->sound->maxpitch;
             }
         }
         
@@ -454,6 +457,7 @@ GMREAL __dsound_getter(double index, double op) {
         case 7: return (double)sound_resources[(int)index].frequency;
         case 8: return (double)sound_resources[(int)index].length;
         case 9: return (double)sound_resources[(int)index].loop_c;
+        case 10: return (double)sound_resources[(int)index].maxpitch;
     }
     
     return ERROR_GENERIC;
@@ -576,6 +580,12 @@ void dsound_init() {
             NULL
         ));
         vibe_check(PrimaryBuffer->Play(0, 0, DSBPLAY_LOOPING));
+        
+        //get max samplerate for pitch shifting
+        DSCAPS dscaps;
+        dscaps.dwSize = sizeof(DSCAPS);
+        vibe_check(Device->GetCaps(&dscaps));
+        MAX_SAMPLE_RATE = dscaps.dwMaxSecondarySampleRate;
     
     
     //set up timer callback
@@ -1017,6 +1027,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         sound->volume = 1.0;
         sound->pan = 0.0;
         sound->pitch = 1.0;
+        sound->maxpitch = MAX_SAMPLE_RATE / ((float)samplerate);
         sound->inst_count = 0;
     
     if (mode != 0) {

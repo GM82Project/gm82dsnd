@@ -397,22 +397,44 @@
 
 
 - sound_get_volume(index)
+    Returns the volume value of the sound or instance.
+
 
 - sound_get_pan(index)
+    Returns the pan value of the sound or instance.
+
 
 - sound_get_pitch(index)
+    Returns the pitch value of the sound or instance.
 
-- sound_get_pos(index)
+
+- sound_get_max_pitch(index)
+    Returns the maximum allowed pitch value for a sound.
+    Usually, this will be 200000 divided by the sound's sample rate,
+    but it may vary by system.
+
+
+- sound_get_pos(index,unit)
 
 - sound_get_preload(index)
     Returns the preload flag of the sound resource, as set in the IDE.
 
 
 - sound_volume(index,vol)
+    Sets the volume value of the sound or instance.
+    Volume cannot be negative or greater than 1.
+
 
 - sound_pan(index,pan)
+    Sets the pan value of the sound or instance.
+    Pan is a value from -1 to 1, where -1 is left and 1 is right.
+
 
 - sound_pitch(index,pitch)
+    Sets the pitch value of the sound or instance.
+    Pitch is a value from 0 to the maximum allowed for that sound.
+    You can retrieve the maximum pitch value with sound_get_max_pitch.
+
 
 - sound_fade
 
@@ -570,7 +592,6 @@
     - sound_get_instance_list
     - sound_get_pos
     - sound_set_pos
-    - sound_set_loop
     - sound_pause_all
     - sound_resume_all
     - sound_background_layer
