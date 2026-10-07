@@ -154,8 +154,6 @@ extern void debug_message(const wchar_t* msg, int value) {
     struct SoundResource {
         LPDIRECTSOUNDBUFFER buffer;
         int index;
-        int loop_a;
-        int loop_b;
         int inst_count;
         int frequency;
         int kind;
@@ -175,6 +173,8 @@ extern void debug_message(const wchar_t* msg, int value) {
         int fade_length;
         int fade_amount;
         int age;
+        int loop_a = 0; // measured in samples
+        int loop_b = -1; // -1 is end of the buffer
         float volume;
         float pan;
         float pitch;
@@ -402,6 +402,8 @@ GMREAL __dsound_setter(double index, double op, double value) {
                 case 0: inst->volume = value; break;
                 case 1: inst->pan    = value; break;
                 case 2: inst->pitch  = value; break;
+                case 3: inst->loop_a = (int)value; break;
+                case 4: inst->loop_b = (int)value; break;
             }
         }
         
@@ -432,6 +434,9 @@ GMREAL __dsound_getter(double index, double op) {
                 case 2: return inst->pitch;
                 case 3: return (double)inst->sound->preload;
                 case 4: return (double)inst->sound->kind;
+                case 5: return (double)inst->loop_a;
+                case 6: return (double)inst->loop_b;
+                case 7: return (double)inst->sound->frequency;
             }
         }
         
@@ -446,6 +451,7 @@ GMREAL __dsound_getter(double index, double op) {
         case 2: return sound_resources[(int)index].pitch;
         case 3: return (double)sound_resources[(int)index].preload;
         case 4: return (double)sound_resources[(int)index].kind;
+        case 7: return (double)sound_resources[(int)index].frequency;
     }
     
     return ERROR_GENERIC;
@@ -979,8 +985,6 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         sound->volume = 1.0;
         sound->pan = 0.0;
         sound->pitch = 1.0;
-        sound->loop_a = 0;
-        sound->loop_b = 0;
         sound->inst_count = 0;
     
     if (mode != 0) {
@@ -1023,7 +1027,6 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     }
     
     SoundInstance* inst = &sound_instances[kind][dsound_get_free_instance(kind)];
-        
     inst->sound = sound;
     inst->clone_buffer = clone;
     inst->index = LAST_INST_ID;
@@ -1032,6 +1035,8 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     inst->pitch = pitch_final;
     inst->volume_from = volume_final;
     inst->volume_to = volume_final;
+    inst->loop_a = 0;
+    inst->loop_b = -1;
     inst->fade_length = 0;
     inst->fade_amount = 0;
     inst->age = 0;

@@ -320,6 +320,28 @@
 					"returntype": 2
 				},
 				{
+					"name": "sound_get_loop_a",
+					"extname": "",
+					"calltype": 2,
+					"helpline": "sound_get_loop_a(index)",
+					"hidden": false,
+					"argtypes": [
+						2
+					],
+					"returntype": 2
+				},
+				{
+					"name": "sound_get_loop_b",
+					"extname": "",
+					"calltype": 2,
+					"helpline": "sound_get_loop_b(index)",
+					"hidden": false,
+					"argtypes": [
+						2
+					],
+					"returntype": 2
+				},
+				{
 					"name": "sound_get_name",
 					"extname": "",
 					"calltype": 2,
@@ -645,7 +667,7 @@
 					"name": "sound_set_loop",
 					"extname": "",
 					"calltype": 2,
-					"helpline": "sound_set_loop(index,a,b,[unit])",
+					"helpline": "sound_set_loop(index,a,[b],[unit])",
 					"hidden": false,
 					"argtypes": null,
 					"returntype": 2
