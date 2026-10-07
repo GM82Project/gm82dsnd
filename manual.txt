@@ -180,8 +180,8 @@
     extra files required by a legacy DirectMusic file format.
     In this extension, this function is instead used to change the directory
     where the various sound_add functions will look for files when using
-    relative file paths. Setting it to an empty string will let the system use
-    the current working_directory when searching.
+    relative file paths. Setting it to an empty string will instead let the
+    system use the current working_directory when searching, as usual.
 
 
 -------------------------------------------------------------------------------
@@ -277,27 +277,29 @@
 
 - sound_background_instance()
     Returns the instance id of the currently playing background music,
-    or noone if there isn't one. If there are multiple layers of music
-    currently active, the function returns the newest one.
-    To get a list of all active background music layers,
-    use sound_kind_instance_list(kind_background).
+    or 'noone'. If there are multiple layers of music currently active, the
+    function returns the newest one. To get a list of all active background
+    music layers, use sound_kind_instance_list(kind_background).
 
 
 - sound_background_tempo(value)
     This function is not currently available due to no MIDI support, and
-    instead shims sound_kind_pitch for the kind_background.
+    instead shims sound_kind_pitch for the background music kind, for
+    compatibility with legacy code.
 
 
-- sound_background_crossfade(index,time,volume,pan,pitch,loop)
+- sound_background_crossfade(time,index,volume,pan,pitch,loop)
     Crossfades between two background music tracks over a specified time.
 
 
-- sound_background_switch(index,time,volume,pan,pitch,loop)
+- sound_background_switch(time,index,volume,pan,pitch,loop)
     Fades out the current background music then fades in the new one.
 
 
 - sound_background_layer(index,vol,pitch,pan,loop)
     Adds a new layer of background music.
+    Normally, playing background music stops any other background music tracks.
+    This function ignores that limitation, allowing multiple tracks.
 
 
 -------------------------------------------------------------------------------
@@ -309,10 +311,12 @@
     In order to solve the common problem of looping sounds remaining after
     leaving a room, we have a new sound persistence system. Only sounds that
     have the persistent flag are allowed to continue playing between rooms.
+    
+    You can toggle this behavior using sound_settings.
 
   
 - sound_set_persistent(index,persistent)
-    Makes a sound index or instance persistent. When a sound is persistent,
+    Makes a sound or instance persistent. When a sound is persistent,
     all instances created from that sound will be persistent too.
 
 
@@ -322,16 +326,15 @@
   -------------------
 
 
-    All getters and setters accept either sound resources or instance ids.
+ -> All getters and setters accept either sound resources or instance ids.
     Any sound-only properties, when queried on instances, will instead return
     the property for the sound resource of which it is an instance of - for
     example, instances do not have a 'preload' attribute.
     
     
-    Additionally, a different method is used to calculate the mixing properties
-    of instances. Usually, when you change the volume or pitch value of a sound
-    resource, any changes to an instance of that sound would simply override
-    those settings.
+ -> A different method is used to calculate the mixing properties of instances.
+    Usually, when you change the volume or pitch value of a sound resource,
+    any changes to an instance of that sound would simply override the values.
     To mitigate this, instance properties are now combined with those of the
     sound resource of which it is an instance of, as well as the settings for
     the 'kind' of the sound, and the master volume value.
@@ -363,13 +366,13 @@
     
     This system allows for developers to set base values on a sound resource
     for mastering purposes, and then have each instance of that sound behave
-    in a predictable way without having to go around and change values
-    everywhere in your code.
+    in a predictable way without having to go and change values everywhere in
+    your code anytime a sound is modified.
     
     The overall programming experience is much more intuitive and convenient.
     
     
-    Functions that take a unit_ type constant accept the following values:
+ -> Functions that take a unit_ type constant accept the following values:
     
     - unit_unitary
         A value from 0 to 1, representing the entire sound from 0% to 100%.
@@ -411,10 +414,14 @@
 - sound_get_max_pitch(index)
     Returns the maximum allowed pitch value for a sound.
     Usually, this will be 200000 divided by the sound's sample rate,
-    but it may vary by system.
+    but the exact figure may vary by system.
+    Average acceptable values are usually under 4.
 
 
-- sound_get_pos(index,unit)
+- sound_get_pos(inst,unit)
+    Returns the current play position of the sound instance, in the specified
+    unit. This function is only valid for sound instances.
+
 
 - sound_get_preload(index)
     Returns the preload flag of the sound resource, as set in the IDE.
@@ -539,6 +546,25 @@
   -----------
 
 
+  On Limitations
+  
+    The 100 instance limit is an arbitrary value calculated for a reasonable
+    balance between flexibility and performance. Every frame, and also every
+    time the timer thread wakes up, the engine needs to run through all
+    instances of all kinds, which is normally 8*100 = 800 instances. This
+    limit could be much higher, but I expect the mixing overhead from more
+    than 100 instances to severely bog down a game. If you're making a game
+    that requires more than 100 instances, either contact me or make a custom
+    build of your own with modified limits. The limit is defined as a macro
+    in the 'types and globals' section of the main C source file.
+    
+    Additionally, the 100000 sound resource limit is also configurable,
+    although I'd be really surprised to see a real usecase for more than
+    a tenth of a million sounds in a single game.
+    
+    The 8 kind limit is also configurable through a macro, if needed be.
+
+
   On Effects
 
     While effects seem difficult to implement, we do have plans to look into
@@ -600,6 +626,7 @@
     
   - buffer add raw and etc
   - pausing
+  - loop points in add ext and set properties?
   - instance editing
   - position getting and setting
   - instance -> SecondaryBuffer property transfer in frame update (scheduler)
