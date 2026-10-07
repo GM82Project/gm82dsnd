@@ -3,7 +3,7 @@
 	"folder": "gm82",
 	"version": "0.1",
 	"author": "renex",
-	"date": "01/10/2026",
+	"date": "07/10/2026",
 	"license": "Free to use, also for commercial games.",
 	"description": "A modern audio engine for Game Maker 8.2.",
 	"helpfile": "",
@@ -887,6 +887,51 @@
 					"name": "unit_unitary",
 					"value": "2",
 					"hidden": false
+				},
+				{
+					"name": "__dsound_etter_volume",
+					"value": "0",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_pan",
+					"value": "1",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_pitch",
+					"value": "2",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_preload",
+					"value": "3",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_kind",
+					"value": "4",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_loopa",
+					"value": "5",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_loopb",
+					"value": "6",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_frequency",
+					"value": "7",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_length",
+					"value": "8",
+					"hidden": true
 				}
 			]
 		},

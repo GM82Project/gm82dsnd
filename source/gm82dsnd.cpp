@@ -157,6 +157,9 @@ extern void debug_message(const wchar_t* msg, int value) {
         int inst_count;
         int frequency;
         int kind;
+        int loop_a;
+        int loop_b;
+        int length;
         float volume;
         float pan;
         float pitch;
@@ -173,8 +176,9 @@ extern void debug_message(const wchar_t* msg, int value) {
         int fade_length;
         int fade_amount;
         int age;
-        int loop_a = 0; // measured in samples
-        int loop_b = -1; // -1 is end of the buffer
+        int posmul;
+        int loop_a;
+        int loop_b;
         float volume;
         float pan;
         float pitch;
@@ -402,8 +406,8 @@ GMREAL __dsound_setter(double index, double op, double value) {
                 case 0: inst->volume = value; break;
                 case 1: inst->pan    = value; break;
                 case 2: inst->pitch  = value; break;
-                case 3: inst->loop_a = (int)value; break;
-                case 4: inst->loop_b = (int)value; break;
+                case 5: inst->loop_a = (int)value; break;
+                case 6: inst->loop_b = (int)value; break;
             }
         }
         
@@ -416,6 +420,8 @@ GMREAL __dsound_setter(double index, double op, double value) {
         case 0: sound_resources[(int)index].volume = value; break;
         case 1: sound_resources[(int)index].pan    = value; break;
         case 2: sound_resources[(int)index].pitch  = value; break;
+        case 5: sound_resources[(int)index].loop_a = (int)value; break;
+        case 6: sound_resources[(int)index].loop_b = (int)value; break;
     }
     
     return 0;
@@ -437,6 +443,7 @@ GMREAL __dsound_getter(double index, double op) {
                 case 5: return (double)inst->loop_a;
                 case 6: return (double)inst->loop_b;
                 case 7: return (double)inst->sound->frequency;
+                case 8: return (double)inst->sound->length;
             }
         }
         
@@ -451,7 +458,10 @@ GMREAL __dsound_getter(double index, double op) {
         case 2: return sound_resources[(int)index].pitch;
         case 3: return (double)sound_resources[(int)index].preload;
         case 4: return (double)sound_resources[(int)index].kind;
+        case 5: return (double)sound_resources[(int)index].loop_a;
+        case 6: return (double)sound_resources[(int)index].loop_b;
         case 7: return (double)sound_resources[(int)index].frequency;
+        case 8: return (double)sound_resources[(int)index].length;
     }
     
     return ERROR_GENERIC;
@@ -978,6 +988,10 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         sound->index = id;
         sound->buffer = secbuffer;
         sound->kind = kind;
+        sound->posmul = channels * (bits / 8);
+        sound->length = data_length / sound->posmul;
+        sound->loop_a = 0;
+        sound->loop_b = sound->length;
         sound->exists = true;
         sound->loaded = true;
         sound->persistent = false;
@@ -1035,8 +1049,8 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     inst->pitch = pitch_final;
     inst->volume_from = volume_final;
     inst->volume_to = volume_final;
-    inst->loop_a = 0;
-    inst->loop_b = -1;
+    inst->loop_a = sound->loop_a;
+    inst->loop_b = sound->loop_b;
     inst->fade_length = 0;
     inst->fade_amount = 0;
     inst->age = 0;

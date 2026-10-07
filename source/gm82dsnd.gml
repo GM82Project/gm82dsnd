@@ -37,7 +37,11 @@
         return noone
     }
     
-    if (!sound_exists(argument0)) __dsound_error(argument1,"Sound index ("+string(argument0)+") doesn't exist.")
+    if (!sound_exists(argument0)) {
+        __dsound_error(argument1,"Sound index ("+string(argument0)+") doesn't exist.")
+        return noone
+    }
+    
     return argument0
 
 
@@ -101,7 +105,7 @@
 #define sound_get_kind
     ///sound_get_kind(ind)  
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_kind"),4)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_kind"),__dsound_etter_kind)
 
 
 #define sound_get_name
@@ -120,7 +124,7 @@
 #define sound_get_preload
     ///sound_get_preload(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_preload"),3)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_preload"),__dsound_etter_preload)
 
 
 #define sound_global_volume
@@ -411,12 +415,13 @@
 #define sound_pitch
     ///sound_pitch(index,value)
     
-    __dsound_setter(__dsound_name_parser(argument0,"sound_pitch"),2,argument1)
+    __dsound_setter(__dsound_name_parser(argument0,"sound_pitch"),__dsound_etter_pitch,argument1)
 
 
 #define sound_get_frequency
+    ///sound_get_frequency(ind)
 
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency"),7)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency"),__dsound_etter_frequency)
 
 
 #define sound_get_instance_count
@@ -428,54 +433,91 @@
 #define sound_get_loop_a
     ///sound_get_loop_a(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_a"),5)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_a"),__dsound_etter_loopa)
 
 
 #define sound_get_loop_b
     ///sound_get_loop_b(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_b"),6)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_b"),__dsound_etter_loopb)
 
 
 #define sound_get_volume
     ///sound_get_volume(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_volume"),0)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_volume"),__dsound_etter_volume)
 
 
 #define sound_get_pan
     ///sound_get_pan(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pan"),1)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pan"),__dsound_etter_pan)
 
 
 #define sound_get_pitch
     ///sound_get_pitch(ind)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pitch"),2)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pitch"),__dsound_etter_pitch)
 
 
-#define sound_get_pos
-    ///sound_get_pos(index)
+#define sound_get_length
+    ///sound_get_length(ind,[unit])
     
-#define sound_set_pos
-    ///sound_set_pos(index,pos)
+    var __len;
+    
+    __len=__dsound_getter(__dsound_name_parser(argument0,"sound_get_length"),__dsound_etter_length)
+    
+    if (argument_count<2) return __len/__dsound_getter(__snd,__dsound_etter_frequency)
+    
+    switch (argument1) {
+        case unit_samples: return __len
+        case unit_seconds: return __len/__dsound_getter(__snd,__dsound_etter_frequency)
+        case unit_unitary: {__dsound_error("sound_get_length","unit_unitary is not valid for this function.") return noone}
+        default: {__dsound_error("sound_get_length","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
 
 
 #define sound_set_loop
     ///sound_set_loop(index,a,[b],[unit])
     //index: sound instance
     //a: loop start in seconds
-    //b (optional): loop end in seconds
-    //Sets the loop points to use when playing a sound with looping enabled.
-    //When B isn't supplied, it is set to the end of the file.
+    //b: loop end in seconds
+    //unit: one of the unit_ constants (default: seconds)
+    //Sets the loop points to use when looping a sound.
+    //You can pass in 'noone' for B to use the end of the file.
 
-    //TODO: handle units
-    var __freq;
-    __freq = sound_get_frequency(argument0);
-    __dsound_setter(__dsound_name_parser(argument0,"sound_set_loop"),3,round(argument1 * __freq))
-    if (argument_count >= 3) __dsound_setter(__dsound_name_parser(argument0,"sound_set_loop"),4,round(argument2 * __freq))
-    else __dsound_setter(__dsound_name_parser(argument0,"sound_set_loop"),4,-1)
+    var __snd,__samples,__unit,__rcp,__a,__b;
+    
+    if (argument_count<2 or argument_count>4) {
+        __dsound_error("sound_set_loop","Incorrect number of arguments.")
+        exit
+    }
+    
+    __snd=__dsound_name_parser(argument0,"sound_set_loop")
+    if (__snd<0) exit
+    
+    if (argument_count>3) __unit=argument3 else __unit=unit_seconds
+    
+    __samples=sound_get_length(__snd,unit_samples)
+    __rcp=sound_get_frequency(__snd)/sound_get_length(__snd,__unit)
+    
+    __a=round(argument1*__rcp)
+    __b=__samples
+    
+    if (argument_count>2)
+        if (argument2>argument1)
+            __b=round(argument2*__rcp)
+    
+    __dsound_setter(__snd,__dsound_etter_loopa,clamp(__a,0,__samples))
+    __dsound_setter(__snd,__dsound_etter_loopb,clamp(__b,0,__samples))
+
+
+#define sound_get_pos
+    ///sound_get_pos(index)
+
+    
+#define sound_set_pos
+    ///sound_set_pos(index,pos)
 
 
 #define sound_pause
