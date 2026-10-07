@@ -320,9 +320,10 @@
 					"name": "sound_get_loop_a",
 					"extname": "",
 					"calltype": 2,
-					"helpline": "sound_get_loop_a(index)",
+					"helpline": "sound_get_loop_a(index,unit)",
 					"hidden": false,
 					"argtypes": [
+						2,
 						2
 					],
 					"returntype": 2
@@ -331,7 +332,19 @@
 					"name": "sound_get_loop_b",
 					"extname": "",
 					"calltype": 2,
-					"helpline": "sound_get_loop_b(index)",
+					"helpline": "sound_get_loop_b(index,unit)",
+					"hidden": false,
+					"argtypes": [
+						2,
+						2
+					],
+					"returntype": 2
+				},
+				{
+					"name": "sound_get_loop_count",
+					"extname": "",
+					"calltype": 2,
+					"helpline": "sound_get_loop_count(index)",
 					"hidden": false,
 					"argtypes": [
 						2
@@ -664,9 +677,15 @@
 					"name": "sound_set_loop",
 					"extname": "",
 					"calltype": 2,
-					"helpline": "sound_set_loop(index,a,[b],[unit])",
+					"helpline": "sound_set_loop(index,start,end,count,unit)",
 					"hidden": false,
-					"argtypes": null,
+					"argtypes": [
+						2,
+						2,
+						2,
+						2,
+						2
+					],
 					"returntype": 2
 				},
 				{
@@ -929,6 +948,11 @@
 					"name": "__dsound_etter_length",
 					"value": "8",
 					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_loopc",
+					"value": "9",
+					"hidden": false
 				}
 			]
 		},

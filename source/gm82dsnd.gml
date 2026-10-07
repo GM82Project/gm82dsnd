@@ -8,12 +8,12 @@
     object_event_add(gm82core_object,ev_step,ev_step_end,"__dsound_update(1000/room_speed)")
     object_event_add(gm82core_object,ev_other,ev_room_end,"__dsound_roomend()")
     
-    globalvar __dsound_error,__dsound_map,__dsound_rev_map,__dsound_prs_map,__dsound_search_dir;
+    globalvar __dsound_error_str,__dsound_map,__dsound_rev_map,__dsound_prs_map,__dsound_search_dir;
     
-    __dsound_error[1]="Generic DirectSound error. Please tell renex about this."
-    __dsound_error[2]="Non-existing sound or instance index."
-    __dsound_error[3]="Failure loading sound data from file or buffer."
-    __dsound_error[4]="No more space to add sounds (100000 sounds). Check if you have a memory leak, otherwise if this is happening due to external asset loading, please enable dsound_reuse_sound_ids using sound_settings."
+    __dsound_error_str[1]="Generic DirectSound error. Please tell renex about this."
+    __dsound_error_str[2]="Non-existing sound or instance index."
+    __dsound_error_str[3]="Failure loading sound data from file or buffer."
+    __dsound_error_str[4]="No more space to add sounds (100000 sounds). Check if you have a memory leak, otherwise if this is happening due to external asset loading, please enable dsound_reuse_sound_ids using sound_settings."
     
     __dsound_map=ds_map_create()
     __dsound_rev_map=ds_map_create()
@@ -78,7 +78,7 @@
         __index=__dsound_add_file(argument0,argument1)
     
     if (__index<0) {
-        __dsound_error("sound_add",__dsound_error[-__index])
+        __dsound_error("sound_add",__dsound_error_str[-__index])
         return noone
     } else {
         __name=filename_change_ext(filename_name(argument0),"")
@@ -429,15 +429,46 @@
 #define sound_get_instance_list
 
 #define sound_get_loop_a
-    ///sound_get_loop_a(ind)
+    ///sound_get_loop_a(ind,unit)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_a",false),__dsound_etter_loopa)
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_loop_a",false)
+    if (__snd<0) return noone
+    
+    __samp=__dsound_getter(__snd,__dsound_etter_loopa)
+    
+    switch (argument1) {
+        case unit_samples: return __samp
+        case unit_seconds: return __samp/__dsound_getter(__snd,__dsound_etter_frequency)
+        case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
+        default: {__dsound_error("sound_get_loop_a","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
 
 
 #define sound_get_loop_b
-    ///sound_get_loop_b(ind)
+    ///sound_get_loop_b(ind,unit)
     
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_b",false),__dsound_etter_loopb)
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_loop_b",false)
+    if (__snd<0) return noone
+    
+    __samp=__dsound_getter(__snd,__dsound_etter_loopb)
+    
+    switch (argument1) {
+        case unit_samples: return __samp
+        case unit_seconds: return __samp/__dsound_getter(__snd,__dsound_etter_frequency)
+        case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
+        default: {__dsound_error("sound_get_loop_b","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
+
+
+#define sound_get_loop_count
+    ///sound_get_loop_count(index)
+    //Returns the number of loops configured for a sound.
+    
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_count",false),__dsound_etter_loopc)
 
 
 #define sound_get_volume
@@ -491,20 +522,32 @@
     if (__snd<0) exit
     
     __samples=sound_get_length(__snd,unit_samples)
-    __rcp=sound_get_frequency(__snd)/sound_get_length(__snd,argument4)
+    __freq=sound_get_frequency(__snd)
     
-    __a=round(argument1*__rcp)
+    switch (argument4) {
+        case unit_samples: {
+            __a=round(argument1)
+            __b=round(argument2)
+        }break
+        case unit_seconds: {
+            __a=round(argument1*__samples/__freq)
+            __b=round(argument2*__samples/__freq)
+        }break
+        case unit_unitary: {
+            __a=round(argument1*__samples)
+            __b=round(argument2*__samples)
+        }break
+        default: {__dsound_error("sound_set_loop","("+string(argument4)+") is not a valid unit type.") return noone}
+    }
     
-    if (argument2>argument1)
-        __b=round(argument2*__rcp)
-    else
+    if (argument2<=argument1)
         __b=__samples
-        
+    
     __dsound_loopsetter(
         __snd,
         clamp(__a,0,__samples),
         clamp(__b,0,__samples),
-        max(0,floor(argument3)
+        max(0,floor(argument3))
     )
 
 

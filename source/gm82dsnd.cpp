@@ -160,6 +160,7 @@ extern void debug_message(const wchar_t* msg, int value) {
         int posmul;
         int loop_a;
         int loop_b;
+        int loop_c;
         int length;
         float volume;
         float pan;
@@ -179,6 +180,7 @@ extern void debug_message(const wchar_t* msg, int value) {
         int age;
         int loop_a;
         int loop_b;
+        int loop_c;
         float volume;
         float pan;
         float pitch;
@@ -432,6 +434,7 @@ GMREAL __dsound_getter(double index, double op) {
                 case 6: return (double)inst->loop_b;
                 case 7: return (double)inst->sound->frequency;
                 case 8: return (double)inst->sound->length;
+                case 9: return (double)inst->loop_c;
             }
         }
         
@@ -450,6 +453,7 @@ GMREAL __dsound_getter(double index, double op) {
         case 6: return (double)sound_resources[(int)index].loop_b;
         case 7: return (double)sound_resources[(int)index].frequency;
         case 8: return (double)sound_resources[(int)index].length;
+        case 9: return (double)sound_resources[(int)index].loop_c;
     }
     
     return ERROR_GENERIC;
@@ -1065,6 +1069,7 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     inst->volume_to = volume_final;
     inst->loop_a = sound->loop_a;
     inst->loop_b = sound->loop_b;
+    inst->loop_c = sound->loop_c;
     inst->fade_length = 0;
     inst->fade_amount = 0;
     inst->age = 0;
