@@ -391,9 +391,9 @@ GMREAL __dsound_setter(double index, double op, double value) {
         SoundInstance* inst;
         if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
             switch ((int)op) {
-                case 0: inst->volume = value; break;
-                case 1: inst->pan    = value; break;
-                case 2: inst->pitch  = value; break;
+                case 0: inst->volume = min(1.0,max(0.0,value)); break;
+                case 1: inst->pan    = min(1.0,max(-1.0,value)); break;
+                case 2: inst->pitch  = min(3.0,max(0.0,value)); break;
                 case 5: inst->loop_a = (int)value; break;
                 case 6: inst->loop_b = (int)value; break;
             }
@@ -405,9 +405,9 @@ GMREAL __dsound_setter(double index, double op, double value) {
     if (!sound_resources[(int)index].exists) return 0;
     
     switch ((int)op) {
-        case 0: sound_resources[(int)index].volume = value; break;
-        case 1: sound_resources[(int)index].pan    = value; break;
-        case 2: sound_resources[(int)index].pitch  = value; break;
+        case 0: sound_resources[(int)index].volume = min(1.0,max(0.0,value)); break;
+        case 1: sound_resources[(int)index].pan    = min(1.0,max(-1.0,value)); break;
+        case 2: sound_resources[(int)index].pitch  = min(3.0,max(0.0,value)); break;
         case 5: sound_resources[(int)index].loop_a = (int)value; break;
         case 6: sound_resources[(int)index].loop_b = (int)value; break;
     }
@@ -693,11 +693,13 @@ bool dsound_instance_from_iid(
 LONG dsound_volume_formula(double vol) {
     //decode log volume used by directsound
     
+    if (!SET_LIN_VOLUME) return (LONG)(-10000.0 * (1.0-vol));
+    
     return (LONG)(3333.3 * log10(max(0.001,min(1.0,vol))));
 }
 
 LONG dsound_pan_formula(double pan) {
-    //decode log volume used by directsound
+    //decode log pan used by directsound
     
     if (pan>=0) return (LONG)(-3333.3 * log10(max(0.001,min(1.0,1.0-pan))));
     else return (LONG)(3333.3 * log10(max(0.001,min(1.0,1.0+pan))));
@@ -1009,7 +1011,7 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     LPDIRECTSOUNDBUFFER clone;
     vibe_check(Device->DuplicateSoundBuffer(sound->buffer, &clone));
     
-    double volume_final = sound->volume * vol * VOLUME;
+    double volume_final = sound->volume * min(1.0,max(0.0,vol)) * VOLUME;
     double pan_final = sound->pan + pan;
     double pitch_final = sound->pitch * pitch;
     

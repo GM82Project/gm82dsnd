@@ -568,8 +568,6 @@
     - sound_add_buffer_raw
     - sound_add_directory
     - sound_get_instance_list
-    - sound_get_frequency
-    - sound_get_length
     - sound_get_pos
     - sound_set_pos
     - sound_set_loop
@@ -581,7 +579,6 @@
     
   - buffer add raw and etc
   - pausing
-  - SET_LIN_VOLUME setting
   - instance editing
   - position getting and setting
   - instance -> SecondaryBuffer property transfer in frame update (scheduler)
