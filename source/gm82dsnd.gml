@@ -476,38 +476,36 @@
 
 
 #define sound_set_loop
-    ///sound_set_loop(index,a,[b],[unit])
+    ///sound_set_loop(index,start,end,count,unit)
     //index: sound instance
-    //a: loop start in seconds
-    //b: loop end in seconds
-    //unit: one of the unit_ constants (default: seconds)
+    //start: start of the looping region
+    //end: end of the looping region
+    //count: how many times to loop, or 0 for infinite
+    //unit: one of the unit_ constants
     //Sets the loop points to use when looping a sound.
-    //You can pass in 'noone' for B to use the end of the file.
+    //You can pass in 'noone' or a negative value for the endpoint to use the end of the file.
 
-    var __snd,__samples,__unit,__rcp,__a,__b;
-    
-    if (argument_count<2 or argument_count>4) {
-        __dsound_error("sound_set_loop","Incorrect number of arguments.")
-        exit
-    }
+    var __snd,__samples,__rcp,__a,__b;
     
     __snd=__dsound_name_parser(argument0,"sound_set_loop",false)
     if (__snd<0) exit
     
-    if (argument_count>3) __unit=argument3 else __unit=unit_seconds
-    
     __samples=sound_get_length(__snd,unit_samples)
-    __rcp=sound_get_frequency(__snd)/sound_get_length(__snd,__unit)
+    __rcp=sound_get_frequency(__snd)/sound_get_length(__snd,argument4)
     
     __a=round(argument1*__rcp)
-    __b=__samples
     
-    if (argument_count>2)
-        if (argument2>argument1)
-            __b=round(argument2*__rcp)
-    
-    __dsound_setter(__snd,__dsound_etter_loopa,clamp(__a,0,__samples))
-    __dsound_setter(__snd,__dsound_etter_loopb,clamp(__b,0,__samples))
+    if (argument2>argument1)
+        __b=round(argument2*__rcp)
+    else
+        __b=__samples
+        
+    __dsound_loopsetter(
+        __snd,
+        clamp(__a,0,__samples),
+        clamp(__b,0,__samples),
+        max(0,floor(argument3)
+    )
 
 
 #define sound_get_pos

@@ -498,6 +498,30 @@ GMREAL __dsound_settings(double setting, double value) {
     return 0;
 }
 
+GMREAL __dsound_loopsetter(double index, double loopa, double loopb, double count) {
+    if (index < 0) return 0;
+    
+    if (index >= RESOURCE_COUNT) {
+        int kind, iid;
+        SoundInstance* inst;
+        if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
+            inst->loop_a = (int)loopa;
+            inst->loop_b = (int)loopb;
+            inst->loop_c = (int)count;
+        }
+        
+        return 0;
+    }
+    
+    if (sound_resources[(int)index].exists) {    
+        sound_resources[(int)index].loop_a = (int)loopa;
+        sound_resources[(int)index].loop_b = (int)loopb;
+        sound_resources[(int)index].loop_c = (int)count;
+    }
+    
+    return 0;
+}
+
 #pragma endregion
 //---------------------------------------------------------------------------//
 #pragma region internals

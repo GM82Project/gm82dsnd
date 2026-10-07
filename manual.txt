@@ -582,7 +582,7 @@
   - instance editing
   - position getting and setting
   - instance -> SecondaryBuffer property transfer in frame update (scheduler)
-  - instance 3d sound computation in frame update (or in dsound timer)
+  - instance 3d sound computation in frame update
   - instance loop point and fading upkeep in timer routine (look into the event timer thing)
   - implement master * kind * sound * inst vol/pan/pitch formula
 
