@@ -224,6 +224,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     bool SET_SCHEDULER = true;
     bool SET_REUSE_SNDIDS = true;
     bool SET_PERSISTENCE = true;
+    bool SET_MASTERING = true;
 
 
 #pragma endregion
@@ -502,6 +503,7 @@ GMREAL __dsound_settings(double setting, double value) {
         case 1: SET_SCHEDULER = (value>0.5); break;
         case 2: SET_REUSE_SNDIDS = (value>0.5); break;
         case 3: SET_PERSISTENCE = (value>0.5); break;
+        case 4: SET_MASTERING = (value>0.5); break;
     }    
     return 0;
 }

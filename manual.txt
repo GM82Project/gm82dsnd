@@ -33,7 +33,11 @@
 
 
   This extension was designed from the ground up using native DirectSound
-  technology to be the definitive Game Maker 8.2 game audio solution.
+  technology to be the definitive Game Maker 8.2 game audio solution. The
+  previous extensions, Sound and Audio, had problems of their own that
+  prevented more serious use, such as licensing issues with FmodEx being a
+  long dead platform, and the handwritten mixer in Audio presenting several
+  different kinds of quality issues and maintenance difficulties.
   
   While not as powerful as 8.2 Sound, this extension is much smaller and
   faster, using up only about 130 KB of exe space when compared to FmodEx's
@@ -42,9 +46,9 @@
   
   Additionally, just like how it's done in the 8.2 Audio extension, in-memory
   sound resource handling allows for builtin sound organization in the 8.2 IDE,
-  while also negating the long load times associated with loading sounds from
+  while also preventing the long load times associated with loading sounds from
   disk at game start. Unlike the Audio extension, the DirectSound mixer
-  produces fine quality audio mixing, without any glitches or hiccups.
+  produces fine quality audio mixing, without any gaps or clicks.
   
   Finally, we've added even more quality of life features, such as the concept
   of persistent sounds, the ability to rename sounds, clearer error messages,
@@ -93,16 +97,18 @@
     
     By default, all of these options are enabled.
     
-  - dsound_use_linear_volume
+  - dsound_use_linear_volume (0)
       Game Maker's volume scale is a logarithmic attenuation value, from 30
       to 100, where half loudness is somewhere around 85, and 60 is inaudible.
       This extension instead uses a more intuitive linear volume scale where
       50 is half as loud, and 0 is inaudible. If your project uses logarithmic
       volume, you can disable this option to restore the vanilla volume scale.
       Note that the volume value from the slider in the sound resource window
-      is always logarithmic.
+      is always logarithmic. Also keep in mind that the default master volume
+      of 0.7 is too quiet in log mode, so if you switch to log mode, also
+      remember to set a more appropriate master volume value.
 
-  - dsound_use_scheduler
+  - dsound_use_scheduler (1)
       Game maker sound functions act immediately upon call. Sometimes this is
       undesirable, such as legacy code that plays a sound and then changes the
       volume - if your game is even a little laggy, you could hear a spike as
@@ -117,20 +123,28 @@
       selectively turn this off - for example, when doing a deadlock loop for
       loading screens - and then turn it back on again afterwards.
 
-  - dsound_reuse_sound_ids
+  - dsound_reuse_sound_ids (2)
       Game Maker assigns incrementing ids to newly added sounds, but this
       means you will eventually run out of space for sounds at 100000 where
       this extension's instance ids start.
       Here we provide an option to reuse dead sound indexes for newly added
       resources. If your legacy code is not designed to handle that, you can
-      disable this option to use incrementing ids only and leave deleted sounds
-      permanently deleted.
+      disable this option to use incrementing ids only and leave deleted sound
+      indexes permanently unused.
 
-  - dsound_respect_persistence
+  - dsound_respect_persistence (3)
       Game Maker allows all sounds to keep playing between room changes. Our
       extension instead only allows sounds marked as 'persistent' to continue
       playing once the room changes. Disabling this option will allow all
       sounds to continue playing between rooms again.
+
+  - dsound_use_mastering_mixer (4)
+      When setting the volume and pan values of instances, other audio
+      solutions simply override the settings of the sound resource. This
+      extension instead uses a mastering mixer that combines the instance with
+      the sound's settings for a more predictable behavior. If you have legacy
+      code that expects full control of the mixing values of instances, you
+      can disable this setting.
 
 
 -------------------------------------------------------------------------------
@@ -177,7 +191,7 @@
 
 - sound_set_search_directory(dir)
     Originally, this function was used to tell Game Maker where to look for
-    extra files required by a legacy DirectMusic file format.
+    the extra files required for playing .sgt music files.
     In this extension, this function is instead used to change the directory
     where the various sound_add functions will look for files when using
     relative file paths. Setting it to an empty string will instead let the
@@ -195,9 +209,13 @@
 
 
 - sound_pack_create
+
 - sound_pack_load
+
 - sound_pack_unload
+
 - sound_pack_unpack
+
 - sound_pack_password
 
 
@@ -259,8 +277,11 @@
 
 
 - sound_3d_set_sound_cone
+
 - sound_3d_set_sound_distance
+
 - sound_3d_set_sound_position
+
 - sound_3d_set_sound_velocity
 
 
@@ -298,8 +319,8 @@
 
 - sound_background_layer(index,vol,pitch,pan,loop)
     Adds a new layer of background music.
-    Normally, playing background music stops any other background music tracks.
-    This function ignores that limitation, allowing multiple tracks.
+    Normally, playing a background music stops all other background musics.
+    This function allows for multiple concurrent background music tracks.
 
 
 -------------------------------------------------------------------------------
@@ -370,6 +391,8 @@
     your code anytime a sound is modified.
     
     The overall programming experience is much more intuitive and convenient.
+    However, if your project has legacy code that requires the old behavior,
+    you can change this using sound_settings.
     
     
  -> Functions that take a unit_ type constant accept the following values:
@@ -632,7 +655,7 @@
   - instance -> SecondaryBuffer property transfer in frame update (scheduler)
   - instance 3d sound computation in frame update
   - instance loop point and fading upkeep in timer routine (look into the event timer thing)
-  - implement master * kind * sound * inst vol/pan/pitch formula
+  - implement master * kind * sound * inst vol/pan/pitch formula, respects SET_MASTERING
 
 
 -------------------------------------------------------------------------------

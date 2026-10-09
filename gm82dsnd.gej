@@ -3,7 +3,7 @@
 	"folder": "gm82",
 	"version": "0.1",
 	"author": "renex",
-	"date": "07/10/2026",
+	"date": "09/10/2026",
 	"license": "Free to use, also for commercial games.",
 	"description": "A modern audio engine for Game Maker 8.2.",
 	"helpfile": "",
@@ -856,6 +856,11 @@
 					"hidden": false
 				},
 				{
+					"name": "dsound_use_mastering_mixer",
+					"value": "4",
+					"hidden": false
+				},
+				{
 					"name": "dsound_use_scheduler",
 					"value": "1",
 					"hidden": false
@@ -916,8 +921,38 @@
 					"hidden": false
 				},
 				{
-					"name": "__dsound_etter_volume",
-					"value": "0",
+					"name": "__dsound_etter_frequency",
+					"value": "7",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_kind",
+					"value": "4",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_length",
+					"value": "8",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_loopa",
+					"value": "5",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_loopb",
+					"value": "6",
+					"hidden": true
+				},
+				{
+					"name": "__dsound_etter_loopc",
+					"value": "9",
+					"hidden": false
+				},
+				{
+					"name": "__dsound_etter_maxpitch",
+					"value": "10",
 					"hidden": true
 				},
 				{
@@ -936,38 +971,8 @@
 					"hidden": true
 				},
 				{
-					"name": "__dsound_etter_kind",
-					"value": "4",
-					"hidden": true
-				},
-				{
-					"name": "__dsound_etter_loopa",
-					"value": "5",
-					"hidden": true
-				},
-				{
-					"name": "__dsound_etter_loopb",
-					"value": "6",
-					"hidden": true
-				},
-				{
-					"name": "__dsound_etter_frequency",
-					"value": "7",
-					"hidden": true
-				},
-				{
-					"name": "__dsound_etter_length",
-					"value": "8",
-					"hidden": true
-				},
-				{
-					"name": "__dsound_etter_loopc",
-					"value": "9",
-					"hidden": false
-				},
-				{
-					"name": "__dsound_etter_maxpitch",
-					"value": "10",
+					"name": "__dsound_etter_volume",
+					"value": "0",
 					"hidden": true
 				}
 			]
