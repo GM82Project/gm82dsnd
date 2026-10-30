@@ -52,7 +52,40 @@
     show_error("8.2 DirectSound error: "+chr(13)+chr(10)+"In function "+argument0+": "+argument1,0)
 
 
-//shims ---------------------------------------------------------------------//
+// settings -----------------------------------------------------------------//
+
+
+#define sound_global_volume
+    ///sound_global_volume(value)
+    
+    __dsound_glob_vol(argument0)
+
+
+#define sound_background_tempo
+    ///sound_background_tempo(factor)
+    //TODO
+
+
+#define sound_settings
+    ///sound_settings(setting,value)
+    //Changes extension configuration. All settings are on by default. Turning all settings off emulates vanilla Game Maker behavior.
+    //dsound_use_linear_volume - Game Maker's volume scale is a logarithmic attenuation value, from 30 to 100, where half loudness is somewhere around 85, and 60 is inaudible. Our extension instead uses a more intuitive linear volume scale where 50 is half as loud, and 0 is inaudible. If your project uses logarithmic volume, you can disable this option to restore the vanilla volume scale. Note that the volume value from the slider in the sound resource window is always logarithmic.
+    //dsound_use_scheduler - Game maker sound functions act immediately upon call. Sometimes this is undesirable, such as when you want to play a sound and then immediately change the settings for it somewhere else within the same frame - if your game is laggy, you could hear a spike as the sound plays at full volume for a very short period of time. In order to mitigate this, our extension uses a system where newly played sounds and changes to sound instances are only executed once per step, in a way where sound operations are more consistent and predictable. Turning this option off will instead apply sound operations immediately.
+    //dsound_reuse_sound_ids - Normally, Game Maker assigns incrementing ids to newly added sounds, but this means you will eventually run out of space for sounds at 100000 where our extension's instance ids start. Here we provide an option to reuse dead sound indexes for newly added resources. If your code is not designed to handle that, you can disable this option to use incrementing ids only and leave deleted sounds permanently deleted. Additionally, sound resource id 0 is never used.
+    
+    __dsound_settings(argument0,argument1)
+
+
+#define sound_set_search_directory
+    ///sound_set_search_directory(dir)
+    
+    __dsound_search_dir=string_replace_all(string(argument0),"/","\")
+    if (__dsound_search_dir!="")
+        if (!string_ends_with(__dsound_search_dir,"\"))
+            __dsound_search_dir+="\"
+
+
+//adding sounds -------------------------------------------------------------//
 
 
 #define sound_add
@@ -87,160 +120,10 @@
     return __index
 
 
-#define sound_background_tempo
-    ///sound_background_tempo(factor)
-    
-
-#define sound_exists
-    ///sound_exists(ind)
-    
-    if (is_string(argument0)) {
-        return ds_map_exists(__dsound_map,argument0)
-    }
-    return __dsound_exists(argument0)
-
-
-#define sound_get_kind
-    ///sound_get_kind(ind)  
-    
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_kind",false),__dsound_etter_kind)
-
-
-#define sound_get_name
-    ///sound_get_name(ind)
-    
-    if (is_string(argument0)) {
-        if (ds_map_exists(__dsound_map,argument0))
-            return argument0
-    } else {
-        if (ds_map_exists(__dsound_rev_map,argument0))
-            return ds_map_find_value(__dsound_rev_map,argument0)
-    }
-    return ""
-
-
-#define sound_get_preload
-    ///sound_get_preload(ind)
-    
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_preload",false),__dsound_etter_preload)
-
-
-#define sound_global_volume
-    ///sound_global_volume(value)
-    
-    __dsound_glob_vol(argument0)
-
-
-#define sound_loop
-    ///sound_loop(index)
-    
-    return __dsound_play(__dsound_name_parser(argument0,"sound_loop",false),1,1,0,1,0)
-
-
-#define sound_play
-    ///sound_play(index)   
-    
-    return __dsound_play(__dsound_name_parser(argument0,"sound_play",false),0,1,0,1,0)
-
-
-#define sound_isplaying
-    ///sound_isplaying(index)
-    
-    return __dsound_insts(__dsound_name_parser(argument0,"sound_isplaying",true))
-
-
-#define sound_volume
-    ///sound_volume(index,value)
-    
-    __dsound_setter(__dsound_name_parser(argument0,"sound_volume",false),0,argument1)
-
-
-#define sound_pan
-    ///sound_pan(index,value)
-    
-    __dsound_setter(__dsound_name_parser(argument0,"sound_pan",false),1,argument1)
-
-
-#define sound_fade
-    ///sound_fade(index,value,time)
-    
-
-#define sound_stop
-    ///sound_stop(index)
-    
-    __dsound_stop(__dsound_name_parser(argument0,"sound_stop",true))
-
-    
-#define sound_stop_all
-    ///sound_stop_all()
-
-    __dsound_stop_all()
-
-
-#define sound_delete
-    ///sound_delete(index)
-    
-#define sound_discard
-    ///sound_discard(index)
-    
-#define sound_replace
-    ///sound_replace(index,fname,kind,preload)
-    
-#define sound_restore
-    ///sound_restore(index)
-    
-#define sound_set_search_directory
-    ///sound_set_search_directory(dir)
-    
-    __dsound_search_dir=string_replace_all(string(argument0),"/","\")
-    if (__dsound_search_dir!="")
-        if (!string_ends_with(__dsound_search_dir,"\"))
-            __dsound_search_dir+="\"
-
-
-
-#define sound_effect_chorus
-    __dsound_error_effects()
-#define sound_effect_compressor
-    __dsound_error_effects()
-#define sound_effect_echo
-    __dsound_error_effects()
-#define sound_effect_equalizer
-    __dsound_error_effects()
-#define sound_effect_flanger
-    __dsound_error_effects()
-#define sound_effect_gargle
-    __dsound_error_effects()
-#define sound_effect_reverb
-    __dsound_error_effects()
-#define sound_effect_set
-    __dsound_error_effects()
-
-#define sound_3d_set_sound_cone
-
-#define sound_3d_set_sound_distance
-
-#define sound_3d_set_sound_position
-
-#define sound_3d_set_sound_velocity
-
-
-//new api -------------------------------------------------------------------//
-
-
-#define sound_settings
-    ///sound_settings(setting,value)
-    //Changes extension configuration. All settings are on by default. Turning all settings off emulates vanilla Game Maker behavior.
-    //dsound_use_linear_volume - Game Maker's volume scale is a logarithmic attenuation value, from 30 to 100, where half loudness is somewhere around 85, and 60 is inaudible. Our extension instead uses a more intuitive linear volume scale where 50 is half as loud, and 0 is inaudible. If your project uses logarithmic volume, you can disable this option to restore the vanilla volume scale. Note that the volume value from the slider in the sound resource window is always logarithmic.
-    //dsound_use_scheduler - Game maker sound functions act immediately upon call. Sometimes this is undesirable, such as when you want to play a sound and then immediately change the settings for it somewhere else within the same frame - if your game is laggy, you could hear a spike as the sound plays at full volume for a very short period of time. In order to mitigate this, our extension uses a system where newly played sounds and changes to sound instances are only executed once per step, in a way where sound operations are more consistent and predictable. Turning this option off will instead apply sound operations immediately.
-    //dsound_reuse_sound_ids - Normally, Game Maker assigns incrementing ids to newly added sounds, but this means you will eventually run out of space for sounds at 100000 where our extension's instance ids start. Here we provide an option to reuse dead sound indexes for newly added resources. If your code is not designed to handle that, you can disable this option to use incrementing ids only and leave deleted sounds permanently deleted. Additionally, sound resource id 0 is never used.
-    
-    __dsound_settings(argument0,argument1)
-
-
 #define sound_add_ext
     ///sound_add_ext(fname,kind,name,vol,pan,pitch,persistent)
     //Adds a sound, and sets its internal name and properties.
+    
     var __snd;
     
     if (!file_exists(argument0)) {
@@ -258,8 +141,8 @@
     sound_set_properties(__snd,argument3,argument4,argument5,argument6)
     
     return __snd
-    
-    
+
+
 #define sound_add_included
     ///sound_add_included(fname,kind)
     //Adds a sound from an included file.
@@ -309,21 +192,69 @@
 
 
 #define sound_add_directory
+    ///sound_add_directory(dir,extension,kind)
+    //TODO
 
-#define sound_set_properties
-    ///sound_set_properties(index,vol,pan,pitch,persistent)
-    //Sets all properties of a sound at once.
+
+#define sound_delete
+    ///sound_delete(index)
+    //TODO
+
+
+#define sound_discard
+    ///sound_discard(index)
+    //TODO
+
+
+#define sound_replace
+    ///sound_replace(index,fname,kind,preload)
+    //TODO
+
+
+#define sound_restore
+    ///sound_restore(index)
+    //TODO
+
+
+// getters and setters ------------------------------------------------------//
+
+
+#define sound_exists
+    ///sound_exists(ind)
     
-    if (!sound_exists(argument0)) {
-        __dsound_error("sound_set_properties","Sound ("+string(argument0)+") doesn't exist.")
-        exit
+    if (is_string(argument0)) {
+        return ds_map_exists(__dsound_map,argument0)
     }
+    return __dsound_exists(argument0)
+
+
+#define sound_get_frequency
+    ///sound_get_frequency(ind)
+
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency",false),__dsound_etter_frequency)
+
+
+#define sound_get_max_pitch
+    ///sound_get_max_pitch(ind)
+
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_max_pitch",false),__dsound_etter_maxpitch)
+
+
+#define sound_get_length
+    ///sound_get_length(ind,[unit])
     
-    sound_set_name(argument0,argument1)
-    sound_volume(argument0,argument2)
-    sound_pan(argument0,argument3)
-    sound_pitch(argument0,argument4)
-    sound_set_persistent(argument0,argument5)
+    var __len;
+    
+    __len=__dsound_getter(__dsound_name_parser(argument0,"sound_get_length",false),__dsound_etter_length)
+    
+    if (argument_count<2) return __len/__dsound_getter(__snd,__dsound_etter_frequency)
+    
+    switch (argument1) {
+        case unit_samples: return __len
+        case unit_seconds: return __len/__dsound_getter(__snd,__dsound_etter_frequency)
+        case unit_unitary: {__dsound_error("sound_get_length","unit_unitary is not valid for this function.") return noone}
+        default: {__dsound_error("sound_get_length","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
 
 
 #define sound_set_name
@@ -353,131 +284,35 @@
     }
 
 
-#define sound_set_persistent
-    ///sound_set_persistent(index,persistent)
+#define sound_get_name
+    ///sound_get_name(ind)
     
-    var __index;
-    __index=__dsound_name_parser(argument0,"sound_set_persistent",false)
-    if (__index!=noone) {
-        ds_map_set(__dsound_prs_map,__index,!!argument1)
+    if (is_string(argument0)) {
+        if (ds_map_exists(__dsound_map,argument0))
+            return argument0
+    } else {
+        if (ds_map_exists(__dsound_rev_map,argument0))
+            return ds_map_find_value(__dsound_rev_map,argument0)
     }
+    return ""
 
 
-#define sound_loop_ext
-    ///sound_loop_ext(index,vol,pan,pitch,paused,single)
+#define sound_get_kind
+    ///sound_get_kind(ind)  
     
-    var __snd;
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_kind",false),__dsound_etter_kind)
+
+
+#define sound_get_preload
+    ///sound_get_preload(ind)
     
-    __snd=__dsound_name_parser(argument0,"sound_loop_ext",false)
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_preload",false),__dsound_etter_preload)
+
+
+#define sound_volume
+    ///sound_volume(index,value)
     
-    if (argument5) __dsound_stop(__snd)
-    return __dsound_play(__snd,1,argument1,argument2,argument3,argument4)
-
-
-#define sound_play_ext
-    ///sound_play_ext(index,vol,pan,pitch,paused,single)
-    
-    var __snd;
-    
-    __snd=__dsound_name_parser(argument0,"sound_play_ext",false)
-    
-    if (argument5) __dsound_stop(__snd)
-    return __dsound_play(__snd,0,argument1,argument2,argument3,argument4)
-
-
-#define sound_play_single
-    ///sound_play_single(index)
-    //Plays a sound, ensuring only one copy of it is playing at a time.
-    
-    sound_stop(argument0)
-    return sound_play(argument0)
-    
-    
-#define sound_loop_single
-    ///sound_loop_single(index)
-    //Loops a sound, ensuring only one copy of it is playing at a time.
-    
-    sound_stop(argument0)
-    return sound_loop(argument0)
-
-
-#define sound_background_instance
-    ///sound_background_instance()
-    //Returns the instance id of the currently playing background music, or noone if there isn't one.
-    //If there are multiple layers of music currently active, the function returns the newest one.
-    
-    return __dsound_getbgid()
-
-
-#define sound_pitch
-    ///sound_pitch(index,value)
-    
-    __dsound_setter(__dsound_name_parser(argument0,"sound_pitch",false),__dsound_etter_pitch,argument1)
-
-
-#define sound_get_frequency
-    ///sound_get_frequency(ind)
-
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_frequency",false),__dsound_etter_frequency)
-
-
-#define sound_get_max_pitch
-    ///sound_get_max_pitch(ind)
-
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_max_pitch",false),__dsound_etter_maxpitch)
-
-
-#define sound_get_instance_count
-    //sound_get_instance_count(index)
-    
-    __snd=__dsound_name_parser(argument0,"sound_get_instance_count",false)
-    if (__snd<0) exit
-    return __dsound_insts(__snd)
-
-
-#define sound_get_instance_list
-
-#define sound_get_loop_a
-    ///sound_get_loop_a(ind,unit)
-    
-    var __snd;
-    
-    __snd=__dsound_name_parser(argument0,"sound_get_loop_a",false)
-    if (__snd<0) return noone
-    
-    __samp=__dsound_getter(__snd,__dsound_etter_loopa)
-    
-    switch (argument1) {
-        case unit_samples: return __samp
-        case unit_seconds: return __samp/__dsound_getter(__snd,__dsound_etter_frequency)
-        case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
-        default: {__dsound_error("sound_get_loop_a","("+string(argument1)+") is not a valid unit type.") return noone}
-    }
-
-
-#define sound_get_loop_b
-    ///sound_get_loop_b(ind,unit)
-    
-    var __snd;
-    
-    __snd=__dsound_name_parser(argument0,"sound_get_loop_b",false)
-    if (__snd<0) return noone
-    
-    __samp=__dsound_getter(__snd,__dsound_etter_loopb)
-    
-    switch (argument1) {
-        case unit_samples: return __samp
-        case unit_seconds: return __samp/__dsound_getter(__snd,__dsound_etter_frequency)
-        case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
-        default: {__dsound_error("sound_get_loop_b","("+string(argument1)+") is not a valid unit type.") return noone}
-    }
-
-
-#define sound_get_loop_count
-    ///sound_get_loop_count(index)
-    //Returns the number of loops configured for a sound.
-    
-    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_count",false),__dsound_etter_loopc)
+    __dsound_setter(__dsound_name_parser(argument0,"sound_volume",false),0,argument1)
 
 
 #define sound_get_volume
@@ -486,10 +321,22 @@
     return __dsound_getter(__dsound_name_parser(argument0,"sound_get_volume",false),__dsound_etter_volume)
 
 
+#define sound_pan
+    ///sound_pan(index,value)
+    
+    __dsound_setter(__dsound_name_parser(argument0,"sound_pan",false),1,argument1)
+
+
 #define sound_get_pan
     ///sound_get_pan(ind)
     
     return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pan",false),__dsound_etter_pan)
+
+
+#define sound_pitch
+    ///sound_pitch(index,value)
+    
+    __dsound_setter(__dsound_name_parser(argument0,"sound_pitch",false),__dsound_etter_pitch,argument1)
 
 
 #define sound_get_pitch
@@ -498,21 +345,20 @@
     return __dsound_getter(__dsound_name_parser(argument0,"sound_get_pitch",false),__dsound_etter_pitch)
 
 
-#define sound_get_length
-    ///sound_get_length(ind,[unit])
+#define sound_set_properties
+    ///sound_set_properties(index,vol,pan,pitch,persistent)
+    //Sets all properties of a sound at once.
     
-    var __len;
-    
-    __len=__dsound_getter(__dsound_name_parser(argument0,"sound_get_length",false),__dsound_etter_length)
-    
-    if (argument_count<2) return __len/__dsound_getter(__snd,__dsound_etter_frequency)
-    
-    switch (argument1) {
-        case unit_samples: return __len
-        case unit_seconds: return __len/__dsound_getter(__snd,__dsound_etter_frequency)
-        case unit_unitary: {__dsound_error("sound_get_length","unit_unitary is not valid for this function.") return noone}
-        default: {__dsound_error("sound_get_length","("+string(argument1)+") is not a valid unit type.") return noone}
+    if (!sound_exists(argument0)) {
+        __dsound_error("sound_set_properties","Sound ("+string(argument0)+") doesn't exist.")
+        exit
     }
+    
+    sound_set_name(argument0,argument1)
+    sound_volume(argument0,argument2)
+    sound_pan(argument0,argument3)
+    sound_pitch(argument0,argument4)
+    sound_set_persistent(argument0,argument5)
 
 
 #define sound_set_loop
@@ -560,12 +406,164 @@
     )
 
 
-#define sound_get_pos
-    ///sound_get_pos(index)
-
+#define sound_get_loop_a
+    ///sound_get_loop_a(ind,unit)
     
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_loop_a",false)
+    if (__snd<0) return noone
+    
+    __samp=__dsound_getter(__snd,__dsound_etter_loopa)
+    
+    switch (argument1) {
+        case unit_samples: return __samp
+        case unit_seconds: return __samp/__dsound_getter(__snd,__dsound_etter_frequency)
+        case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
+        default: {__dsound_error("sound_get_loop_a","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
+
+
+#define sound_get_loop_b
+    ///sound_get_loop_b(ind,unit)
+    
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_loop_b",false)
+    if (__snd<0) return noone
+    
+    __samp=__dsound_getter(__snd,__dsound_etter_loopb)
+    
+    switch (argument1) {
+        case unit_samples: return __samp
+        case unit_seconds: return __samp/__dsound_getter(__snd,__dsound_etter_frequency)
+        case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
+        default: {__dsound_error("sound_get_loop_b","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
+
+
+#define sound_get_loop_count
+    ///sound_get_loop_count(index)
+    //Returns the number of loops configured for a sound.
+    
+    return __dsound_getter(__dsound_name_parser(argument0,"sound_get_loop_count",false),__dsound_etter_loopc)
+
+
+// play control -------------------------------------------------------------//
+
+
+#define sound_play
+    ///sound_play(index)   
+    
+    return __dsound_play(__dsound_name_parser(argument0,"sound_play",false),0,1,0,1,0)
+
+
+#define sound_loop
+    ///sound_loop(index)
+    
+    return __dsound_play(__dsound_name_parser(argument0,"sound_loop",false),1,1,0,1,0)
+
+
+#define sound_play_ext
+    ///sound_play_ext(index,vol,pan,pitch,paused,single)
+    
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_play_ext",false)
+    
+    if (argument5) __dsound_stop(__snd)
+    return __dsound_play(__snd,0,argument1,argument2,argument3,argument4)
+
+
+#define sound_loop_ext
+    ///sound_loop_ext(index,vol,pan,pitch,paused,single)
+    
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_loop_ext",false)
+    
+    if (argument5) __dsound_stop(__snd)
+    return __dsound_play(__snd,1,argument1,argument2,argument3,argument4)
+
+
+#define sound_play_single
+    ///sound_play_single(index)
+    //Plays a sound, ensuring only one copy of it is playing at a time.
+    
+    sound_stop(argument0)
+    return sound_play(argument0)
+
+
+#define sound_loop_single
+    ///sound_loop_single(index)
+    //Loops a sound, ensuring only one copy of it is playing at a time.
+    
+    sound_stop(argument0)
+    return sound_loop(argument0)
+
+
 #define sound_set_pos
     ///sound_set_pos(index,pos)
+    //TODO
+
+
+#define sound_get_pos
+    ///sound_get_pos(index)
+    //TODO
+
+    
+#define sound_set_persistent
+    ///sound_set_persistent(index,persistent)
+    
+    var __index;
+    __index=__dsound_name_parser(argument0,"sound_set_persistent",false)
+    if (__index!=noone) {
+        ds_map_set(__dsound_prs_map,__index,!!argument1)
+    }
+
+
+#define sound_fade
+    ///sound_fade(index,value,time)
+    //TODO
+
+
+#define sound_stop
+    ///sound_stop(index)
+    
+    __dsound_stop(__dsound_name_parser(argument0,"sound_stop",true))
+
+
+#define sound_stop_all
+    ///sound_stop_all()
+
+    __dsound_stop_all()
+
+
+#define sound_isplaying
+    ///sound_isplaying(index)
+    
+    return __dsound_insts(__dsound_name_parser(argument0,"sound_isplaying",true))
+
+
+#define sound_get_instance_count
+    //sound_get_instance_count(index)
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_instance_count",false)
+    if (__snd<0) exit
+    return __dsound_insts(__snd)
+
+
+#define sound_get_instance_list
+    //sound_get_instance_list(index)
+    //TODO
+
+
+#define sound_background_instance
+    ///sound_background_instance()
+    //Returns the instance id of the currently playing background music, or noone if there isn't one.
+    //If there are multiple layers of music currently active, the function returns the newest one.
+    
+    return __dsound_getbgid()
 
 
 #define sound_pause
@@ -590,6 +588,8 @@
     __dsound_setpause_all(0)
 
 
+// kinds --------------------------------------------------------------------//
+
 #define sound_kind_pause
     ///sound_kind_pause(kind)
     __dsound_setpause_kind(argument0,1)
@@ -600,5 +600,38 @@
     __dsound_setpause_kind(argument0,0)
 
 
+// 3d sounds ----------------------------------------------------------------//
+
+#define sound_3d_set_sound_cone
+    //TODO
+
+#define sound_3d_set_sound_distance
+    //TODO
+
+#define sound_3d_set_sound_position
+    //TODO
+
+#define sound_3d_set_sound_velocity
+    //TODO
+
+
+// effects ------------------------------------------------------------------//
+
+#define sound_effect_chorus
+    __dsound_error_effects()
+#define sound_effect_compressor
+    __dsound_error_effects()
+#define sound_effect_echo
+    __dsound_error_effects()
+#define sound_effect_equalizer
+    __dsound_error_effects()
+#define sound_effect_flanger
+    __dsound_error_effects()
+#define sound_effect_gargle
+    __dsound_error_effects()
+#define sound_effect_reverb
+    __dsound_error_effects()
+#define sound_effect_set
+    __dsound_error_effects()
 //
 //
