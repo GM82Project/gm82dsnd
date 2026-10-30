@@ -1087,7 +1087,7 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     inst->fade_amount = 0;
     inst->age = 0;
     inst->exists = true;
-    inst->playing = true;
+    inst->playing = false;
     inst->looping = loop;
     inst->persistent = sound->persistent;
     
@@ -1135,6 +1135,7 @@ void dsound_inst_start(SoundInstance* inst) {
             inst->clone_buffer->Play(0, 0, 0)
         );
     }
+    inst->playing = true;
 }
 
 void dsound_inst_stop(int iid) {
@@ -1164,12 +1165,16 @@ void dsound_sound_stop(int index) {
     
     SoundResource* sound = &sound_resources[index];
     
-    SoundInstance* inst;
-    
-    REPEAT(i, INSTANCE_COUNT) REPEAT(kind,4) {
-        inst = &sound_instances[kind][i];
-        if (inst->exists && inst->sound == sound) {
-            dsound_inst_free(inst);
+    if (sound->exists) {
+        SoundInstance* inst;
+        
+        int kind = sound->kind;
+        
+        REPEAT(i, INSTANCE_COUNT) {
+            inst = &sound_instances[kind][i];
+            if (inst->exists && inst->sound == sound) {
+                dsound_inst_free(inst);
+            }
         }
     }
 }
@@ -1207,7 +1212,41 @@ void dsound_set_volume(double vol) {
 }
 
 void dsound_set_pause(int index, bool paused) {
-    //etc
+    int kind,iid;
+    SoundInstance* inst;
+    
+    if (dsound_instance_from_iid(index, &kind, &iid, &inst)) {
+        //pause instance
+        if (paused) {
+            if (inst->playing) {
+                vibe_check(inst->clone_buffer->Stop());
+                inst->playing = false;
+            }
+        } else {
+            if (!inst->playing)
+                dsound_inst_start(inst);
+        }
+    } else {
+        //pause all of sound
+        SoundResource* sound = &sound_resources[index];
+        if (sound->exists) {
+            kind = sound->kind;
+            REPEAT(i, INSTANCE_COUNT) {
+                inst = &sound_instances[kind][i];
+                if (inst->exists && inst->sound == sound) {
+                    if (paused) {
+                        if (inst->playing) {
+                            vibe_check(inst->clone_buffer->Stop());
+                            inst->playing = false;
+                        }
+                    } else {
+                        if (!inst->playing)
+                            dsound_inst_start(inst);
+                    }
+                }
+            }
+        }
+    }
 }
 
 #pragma endregion

@@ -3,7 +3,7 @@
 	"folder": "gm82",
 	"version": "0.1",
 	"author": "renex",
-	"date": "09/10/2026",
+	"date": "30/10/2026",
 	"license": "Free to use, also for commercial games.",
 	"description": "A modern audio engine for Game Maker 8.2.",
 	"helpfile": "",
@@ -569,6 +569,17 @@
 					"returntype": 2
 				},
 				{
+					"name": "sound_pause",
+					"extname": "",
+					"calltype": 2,
+					"helpline": "sound_pause(index)",
+					"hidden": false,
+					"argtypes": [
+						2
+					],
+					"returntype": 2
+				},
+				{
 					"name": "sound_pause_all",
 					"extname": "",
 					"calltype": 2,
@@ -647,6 +658,17 @@
 					"calltype": 2,
 					"helpline": "",
 					"hidden": true,
+					"argtypes": [
+						2
+					],
+					"returntype": 2
+				},
+				{
+					"name": "sound_resume",
+					"extname": "",
+					"calltype": 2,
+					"helpline": "sound_resume(index)",
+					"hidden": false,
 					"argtypes": [
 						2
 					],
