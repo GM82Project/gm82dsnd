@@ -428,6 +428,12 @@
 
 
 #define sound_get_instance_count
+    //sound_get_instance_count(index)
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_instance_count",false)
+    if (__snd<0) exit
+    return __dsound_insts(__snd)
+
 
 #define sound_get_instance_list
 
@@ -575,8 +581,24 @@
 
 
 #define sound_pause_all
+    ///sound_pause_all()
+    __dsound_setpause_all(1)
 
+    
 #define sound_resume_all
+    //sound_resume_all()
+    __dsound_setpause_all(0)
+
+
+#define sound_kind_pause
+    ///sound_kind_pause(kind)
+    __dsound_setpause_kind(argument0,1)
+
+
+#define sound_kind_resume
+    ///sound_kind_resume(kind)
+    __dsound_setpause_kind(argument0,0)
+
 
 //
 //

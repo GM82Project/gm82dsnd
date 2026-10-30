@@ -633,7 +633,6 @@
     - sound_3d_*
   
   - extended api
-    - sound_get_instance_count
     - sound_add_raw
     - sound_add_buffer
     - sound_add_buffer_raw
@@ -641,14 +640,11 @@
     - sound_get_instance_list
     - sound_get_pos
     - sound_set_pos
-    - sound_pause_all
-    - sound_resume_all
     - sound_background_layer
     - sound_kind_instance_list
     - sound_kind_...
     
   - buffer add raw and etc
-  - pausing
   - loop points in add ext and set properties?
   - instance editing
   - position getting and setting

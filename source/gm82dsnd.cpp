@@ -263,6 +263,9 @@ extern void debug_message(const wchar_t* msg, int value) {
 //setters getters
     void dsound_set_volume(double);
     void dsound_set_pause(int, bool);
+    void dsound_setpause_all(bool);
+    void dsound_setpause_kind(int, bool);
+
 
 #pragma endregion
 //---------------------------------------------------------------------------//
@@ -484,7 +487,17 @@ GMREAL __dsound_stop_all() {
 }
 
 GMREAL __dsound_setpause(double index, double pause) {
-    dsound_set_pause((int)index,pause>0.5);
+    dsound_set_pause((int)index, pause>0.5);
+    return 0;
+}
+
+GMREAL __dsound_setpause_all(double pause) {
+    dsound_setpause_all(pause>0.5);
+    return 0;
+}
+
+GMREAL __dsound_setpause_kind(double kind, double pause) {
+    dsound_setpause_kind((int)kind, pause>0.5);
     return 0;
 }
 
@@ -1244,6 +1257,33 @@ void dsound_set_pause(int index, bool paused) {
                             dsound_inst_start(inst);
                     }
                 }
+            }
+        }
+    }
+}
+
+void dsound_setpause_all(bool paused) {
+    REPEAT(kind,NUM_KINDS) {
+        dsound_setpause_kind(kind, paused);
+    }
+}
+
+void dsound_setpause_kind(int kind, bool paused) {
+    //changes the paused state of all sounds of a kind.
+    
+    SoundInstance* inst;
+    
+    REPEAT(i, INSTANCE_COUNT) {
+        inst = &sound_instances[kind][i];
+        if (inst->exists) {
+            if (paused) {
+                if (inst->playing) {
+                    vibe_check(inst->clone_buffer->Stop());
+                    inst->playing = false;
+                }
+            } else {
+                if (!inst->playing)
+                    dsound_inst_start(inst);
             }
         }
     }

@@ -1209,6 +1209,29 @@
 						2
 					],
 					"returntype": 2
+				},
+				{
+					"name": "__dsound_setpause_all",
+					"extname": "",
+					"calltype": 12,
+					"helpline": "",
+					"hidden": true,
+					"argtypes": [
+						2
+					],
+					"returntype": 2
+				},
+				{
+					"name": "__dsound_setpause_kind",
+					"extname": "",
+					"calltype": 12,
+					"helpline": "",
+					"hidden": false,
+					"argtypes": [
+						2,
+						2
+					],
+					"returntype": 2
 				}
 			],
 			"constants": []
