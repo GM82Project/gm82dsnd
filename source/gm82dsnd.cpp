@@ -225,6 +225,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     bool SET_REUSE_SNDIDS = true;
     bool SET_PERSISTENCE = true;
     bool SET_MASTERING = true;
+    bool SET_LAYERING = false;
 
 
 #pragma endregion
@@ -258,6 +259,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     void dsound_inst_free(SoundInstance*);
     void dsound_sound_stop(int);
     void dsound_stop_nonp();
+    void dsound_kind_stop(int);
     void dsound_stop_all();
 
 //setters getters
@@ -502,7 +504,7 @@ GMREAL __dsound_setpause_kind(double kind, double pause) {
 }
 
 GMREAL __dsound_getbgid() {
-    int kind,index;
+    int kind, index;
     SoundInstance* inst;
     if (dsound_instance_from_iid(BGM_INST_ID, &kind, &index, &inst)) {
         return (double)BGM_INST_ID;
@@ -517,6 +519,7 @@ GMREAL __dsound_settings(double setting, double value) {
         case 2: SET_REUSE_SNDIDS = (value>0.5); break;
         case 3: SET_PERSISTENCE = (value>0.5); break;
         case 4: SET_MASTERING = (value>0.5); break;
+        case 5: SET_LAYERING = (value>0.5); break;
     }    
     return 0;
 }
@@ -1076,11 +1079,11 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     int kind = sound->kind;
     
     if (kind == 1) {
-        dsound_inst_stop(BGM_INST_ID);
+        if (!SET_LAYERING) dsound_kind_stop(1);
         BGM_INST_ID = LAST_INST_ID;
     }
     if (kind == 3) {
-        dsound_inst_stop(MM_INST_ID);
+        if (!SET_LAYERING) dsound_kind_stop(3);
         MM_INST_ID = LAST_INST_ID;
     }
     
@@ -1154,7 +1157,7 @@ void dsound_inst_start(SoundInstance* inst) {
 void dsound_inst_stop(int iid) {
     //stops an instance given its instance id
     
-    int kind,index;
+    int kind, index;
     SoundInstance* inst;
     
     if (dsound_instance_from_iid(iid, &kind, &index, &inst)) {
@@ -1198,7 +1201,7 @@ void dsound_stop_nonp() {
     if (SET_PERSISTENCE) {
         SoundInstance* inst;
         
-        REPEAT(i, INSTANCE_COUNT) REPEAT(kind,4) {
+        REPEAT(i, INSTANCE_COUNT) REPEAT(kind, 4) {
             inst = &sound_instances[kind][i];
             if (inst->exists && !inst->persistent) {
                 dsound_inst_free(inst);
@@ -1207,10 +1210,18 @@ void dsound_stop_nonp() {
     }
 }
 
-void dsound_stop_all() {
-    //stops all sounds.
+void dsound_kind_stop(int kind) {
+    //stops all instances of a kind
     
-    REPEAT(i, INSTANCE_COUNT) REPEAT(kind,NUM_KINDS) {
+    REPEAT(i, INSTANCE_COUNT) {
+        dsound_inst_free(&sound_instances[kind][i]);
+    }
+}
+
+void dsound_stop_all() {
+    //stops all sounds
+    
+    REPEAT(i, INSTANCE_COUNT) REPEAT(kind, NUM_KINDS) {
         dsound_inst_free(&sound_instances[kind][i]);
     }
 }
@@ -1225,7 +1236,7 @@ void dsound_set_volume(double vol) {
 }
 
 void dsound_set_pause(int index, bool paused) {
-    int kind,iid;
+    int kind, iid;
     SoundInstance* inst;
     
     if (dsound_instance_from_iid(index, &kind, &iid, &inst)) {
@@ -1263,7 +1274,7 @@ void dsound_set_pause(int index, bool paused) {
 }
 
 void dsound_setpause_all(bool paused) {
-    REPEAT(kind,NUM_KINDS) {
+    REPEAT(kind, NUM_KINDS) {
         dsound_setpause_kind(kind, paused);
     }
 }

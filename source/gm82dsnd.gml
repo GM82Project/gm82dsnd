@@ -68,10 +68,11 @@
 
 #define sound_settings
     ///sound_settings(setting,value)
-    //Changes extension configuration. All settings are on by default. Turning all settings off emulates vanilla Game Maker behavior.
+    //Changes extension configuration. Most settings are on by default. Turning all settings off emulates vanilla Game Maker behavior.
     //dsound_use_linear_volume - Game Maker's volume scale is a logarithmic attenuation value, from 30 to 100, where half loudness is somewhere around 85, and 60 is inaudible. Our extension instead uses a more intuitive linear volume scale where 50 is half as loud, and 0 is inaudible. If your project uses logarithmic volume, you can disable this option to restore the vanilla volume scale. Note that the volume value from the slider in the sound resource window is always logarithmic.
     //dsound_use_scheduler - Game maker sound functions act immediately upon call. Sometimes this is undesirable, such as when you want to play a sound and then immediately change the settings for it somewhere else within the same frame - if your game is laggy, you could hear a spike as the sound plays at full volume for a very short period of time. In order to mitigate this, our extension uses a system where newly played sounds and changes to sound instances are only executed once per step, in a way where sound operations are more consistent and predictable. Turning this option off will instead apply sound operations immediately.
     //dsound_reuse_sound_ids - Normally, Game Maker assigns incrementing ids to newly added sounds, but this means you will eventually run out of space for sounds at 100000 where our extension's instance ids start. Here we provide an option to reuse dead sound indexes for newly added resources. If your code is not designed to handle that, you can disable this option to use incrementing ids only and leave deleted sounds permanently deleted. Additionally, sound resource id 0 is never used.
+    //dsound_layer_music - Allows stacking of background music layers. Disabled by default.
     
     __dsound_settings(argument0,argument1)
 

@@ -145,6 +145,10 @@
       the sound's settings for a more predictable behavior. If you have legacy
       code that expects full control of the mixing values of instances, you
       can disable this setting.
+  
+  - dsound_layer_music (5)
+      Allows background and multimedia kinds to play multiple tracks
+      simultaneously.
 
 
 -------------------------------------------------------------------------------
@@ -293,7 +297,8 @@
 
     We provide some convenience functions to make managing background music
     a little easier. Additionally, it is possible to have more than one layer
-    of background music playing simultaneously, using the layer functions.
+    of background music playing simultaneously, by turning on the setting for
+    dsound_layer_music.
 
 
 - sound_background_instance()
@@ -315,12 +320,6 @@
 
 - sound_background_switch(time,index,volume,pan,pitch,loop)
     Fades out the current background music then fades in the new one.
-
-
-- sound_background_layer(index,vol,pitch,pan,loop)
-    Adds a new layer of background music.
-    Normally, playing a background music stops all other background musics.
-    This function allows for multiple concurrent background music tracks.
 
 
 -------------------------------------------------------------------------------
@@ -640,7 +639,6 @@
     - sound_get_instance_list
     - sound_get_pos
     - sound_set_pos
-    - sound_background_layer
     - sound_kind_instance_list
     - sound_kind_...
     
