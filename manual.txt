@@ -442,11 +442,6 @@
     Average acceptable values are usually under 4.
 
 
-- sound_get_pos(inst,unit)
-    Returns the current play position of the sound instance, in the specified
-    unit. This function is only valid for sound instances.
-
-
 - sound_get_preload(index)
     Returns the preload flag of the sound resource, as set in the IDE.
 
@@ -467,7 +462,13 @@
     You can retrieve the maximum pitch value with sound_get_max_pitch.
 
 
-- sound_fade
+- sound_fade(index,volume,time)
+    Fades the sound to the specified volume over the time in milliseconds.
+
+
+- sound_get_pos(inst,unit)
+    Returns the current play position of the sound instance, in the specified
+    unit. This function is only valid for sound instances.
 
 - sound_set_pos
 
@@ -510,20 +511,16 @@
         extension does not need to do that, so this kind is handled the same
         way as kind_background (1), with only one instance allowed at a time.
     
+    
     For the developer's organizational convenience, we also provide four extra
     kinds, labelled kind_extra1 through 4. Those new kinds occupy the indices
     4 through 7 and behave the same way as kind_sounds (0).
 
 
--------------------------------------------------------------------------------
-
-  Kind Functions
-  --------------
-
-
     Same as the two previous sound extensions, it is possible to batch-operate
     on all sounds of a specific kind. For example, you may want to stop all
     kind_sounds, or change the volume of all kind_background music tracks.
+    The kind-specific functions are used to do that.
 
 
 - sound_kind_volume(kind,volume)
