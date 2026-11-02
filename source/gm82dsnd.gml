@@ -525,6 +525,7 @@
 
 #define sound_fade
     ///sound_fade(index,value,time)
+    if (argument2<=0) sound_volume(argument0,argument1)
     //TODO
 
 
@@ -567,6 +568,36 @@
     return __dsound_getbgid()
 
 
+#define sound_background_crossfade
+    ///sound_background_crossfade(time,index,volume,pan,pitch,loop)
+    //Crossfades between two background music tracks over a specified time, in milliseconds.
+    
+    var __snd,__list,__i;
+    
+    if (!sound_exists(argument1)) {
+        __dsound_error(sound_background_crossfade,"Sound with index ("+string(argument1)+") doesn't exist.")
+        return noone
+    }
+    
+    __list=sound_kind_instance_list(kind_background)
+    __i=0 repeat (ds_list_size(__list)) {
+        sound_fade(ds_list_find_value(__list,__i),0,argument0)
+    i+=1} ds_list_destroy(__list)
+    
+    if (argument5) __snd=sound_loop_ext(argument1,0,argument3,argument4,0,0)
+    else __snd=sound_play_ext(argument1,0,argument3,argument4,0,0)
+    
+    sound_fade(__snd,argument2,argument0)
+    
+    return __snd
+
+
+#define sound_background_switch
+    ///sound_background_switch(time,index,volume,pan,pitch,loop)
+    //Fades out the current background music then fades in the new one over a specified time, in milliseconds.
+    //TODO
+
+
 #define sound_pause
     ///sound_pause(index)
     //Pauses a sound instance. If a sound index is passed, all instances of the sound will be paused.
@@ -599,6 +630,20 @@
 #define sound_kind_resume
     ///sound_kind_resume(kind)
     __dsound_setpause_kind(argument0,0)
+
+
+#define sound_kind_instance_list
+    ///sound_kind_instance_list(kind)
+    //Returns a ds_list with the instance ids of all active sounds of a kind.
+    //Make sure to delete the ds_list after you're done with it.
+    
+    var __list;
+    
+    __list=ds_list_create()
+    
+    //TODO
+    
+    return __list
 
 
 // 3d sounds ----------------------------------------------------------------//

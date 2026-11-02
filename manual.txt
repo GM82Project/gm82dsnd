@@ -315,11 +315,13 @@
 
 
 - sound_background_crossfade(time,index,volume,pan,pitch,loop)
-    Crossfades between two background music tracks over a specified time.
+    Crossfades between two background music tracks over a specified time,
+    in milliseconds.
 
 
 - sound_background_switch(time,index,volume,pan,pitch,loop)
-    Fades out the current background music then fades in the new one.
+    Fades out the current background music then fades in the new one over a
+    specified time, in milliseconds.
 
 
 -------------------------------------------------------------------------------

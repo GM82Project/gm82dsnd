@@ -3,7 +3,7 @@
 	"folder": "gm82",
 	"version": "0.1",
 	"author": "renex",
-	"date": "01/11/2026",
+	"date": "02/11/2026",
 	"license": "Free to use, also for commercial games.",
 	"description": "A modern audio engine for Game Maker 8.2.",
 	"helpfile": "",
@@ -443,6 +443,17 @@
 					"calltype": 2,
 					"helpline": "",
 					"hidden": true,
+					"argtypes": [
+						2
+					],
+					"returntype": 2
+				},
+				{
+					"name": "sound_kind_instance_list",
+					"extname": "",
+					"calltype": 2,
+					"helpline": "sound_kind_instance_list(kind)",
+					"hidden": false,
 					"argtypes": [
 						2
 					],
