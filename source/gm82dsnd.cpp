@@ -267,6 +267,8 @@ extern void debug_message(const wchar_t* msg, int value) {
     void dsound_set_pause(int, bool);
     void dsound_setpause_all(bool);
     void dsound_setpause_kind(int, bool);
+    int dsound_get_position(SoundInstance*);
+    void dsound_set_position(SoundInstance*, int);
 
 
 #pragma endregion
@@ -406,6 +408,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
                 case 2: inst->pitch  = min(inst->sound->maxpitch,max(0.0,value)); break;
                 case 5: inst->loop_a = (int)value; break;
                 case 6: inst->loop_b = (int)value; break;
+                case 11: dsound_set_position(inst,(int)value); break;
             }
         }
         
@@ -444,6 +447,7 @@ GMREAL __dsound_getter(double index, double op) {
                 case 8: return (double)inst->sound->length;
                 case 9: return (double)inst->loop_c;
                 case 10: return (double)inst->sound->maxpitch;
+                case 11: return (double)dsound_get_position(inst);
             }
         }
         
@@ -1298,6 +1302,23 @@ void dsound_setpause_kind(int kind, bool paused) {
             }
         }
     }
+}
+
+int dsound_get_position(SoundInstance* inst) {
+    //returns buffer position in samples
+    
+    LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->clone_buffer;
+    DWORD pos = NULL;
+    vibe_check(buf8->GetCurrentPosition(&pos,NULL));
+    return ((int)pos) / inst->sound->posmul;
+}
+
+void dsound_set_position(SoundInstance* inst, int position) {
+    //sets buffer position in samples
+    
+    LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->clone_buffer;
+    DWORD pos = ((DWORD)position) * inst->sound->posmul;
+    vibe_check(buf8->SetCurrentPosition(pos));
 }
 
 #pragma endregion

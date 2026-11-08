@@ -470,7 +470,11 @@
     Returns the current play position of the sound instance, in the specified
     unit. This function is only valid for sound instances.
 
-- sound_set_pos
+
+- sound_set_pos(inst,pos,unit)
+    Sets the play position of the sound instance, in the specified unit.
+    This function is only valid for sound instances.
+
 
 - sound_set_loop(index,start,end,count,unit)
     Defines the start and end loop points for a sound or instance.

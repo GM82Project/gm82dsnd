@@ -263,6 +263,7 @@
     //index: old sound name, or resource index
     //name: new name to use
     //Renames a sound such that it can be addressed by the new name string.
+    //TODO: only allow sound index
     
     var __index,__name;
     
@@ -504,13 +505,39 @@
 
 
 #define sound_set_pos
-    ///sound_set_pos(index,pos)
-    //TODO
+    ///sound_set_pos(index,pos,unit)
+    
+    var __snd,__pos;
+    
+    __snd=__dsound_name_parser(argument0,"sound_set_pos",false)
+    if (__snd<100000) return noone
+    
+    switch (argument2) {
+        case unit_samples: __pos=argument1 break
+        case unit_seconds: __pos=argument1*__dsound_getter(__snd,__dsound_etter_frequency) break
+        case unit_unitary: __pos=argument1*__dsound_getter(__snd,__dsound_etter_length) break
+        default: {__dsound_error("sound_set_pos","("+string(argument2)+") is not a valid unit type.") return noone}
+    }
+    
+    __dsound_setter(__snd,__dsound_etter_position,__pos)
 
 
 #define sound_get_pos
-    ///sound_get_pos(index)
-    //TODO
+    ///sound_get_pos(index,unit)
+    
+    var __snd,__pos;
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_pos",false)
+    if (__snd<100000) return noone
+    
+    __pos=__dsound_getter(__snd,__dsound_etter_position)
+    
+    switch (argument1) {
+        case unit_samples: return __pos break
+        case unit_seconds: return __pos / __dsound_getter(__snd,__dsound_etter_frequency) break
+        case unit_unitary: return __pos / __dsound_getter(__snd,__dsound_etter_length) break
+        default: {__dsound_error("sound_get_pos","("+string(argument1)+") is not a valid unit type.") return noone}
+    }
 
     
 #define sound_set_persistent
