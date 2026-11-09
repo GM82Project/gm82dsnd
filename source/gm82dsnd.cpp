@@ -176,8 +176,6 @@ extern void debug_message(const wchar_t* msg, int value) {
         SoundResource* sound;
         LPDIRECTSOUNDBUFFER clone_buffer;
         int index;
-        int fade_length;
-        int fade_amount;
         int age;
         int loop_a;
         int loop_b;
@@ -185,11 +183,14 @@ extern void debug_message(const wchar_t* msg, int value) {
         float volume;
         float pan;
         float pitch;
-        float volume_from;
-        float volume_to;
+        float fade_from;
+        float fade_to;
+        int fade_length;
+        int fade_count;
         bool exists = false;
         bool playing;
         bool looping;        
+        bool fading;        
         bool persistent;
         bool scheduled;
     };
@@ -637,7 +638,19 @@ void dsound_init() {
 void dsound_thread_update() {
     //thread; use THREAD_MS increments
     
-    //todo: update all loop points and instance fading here
+    SoundInstance* inst;
+    
+    REPEAT(kind, NUM_KINDS) REPEAT(i, INSTANCE_COUNT) {
+        inst = &sound_instances[kind][i];
+        if (inst->exists) {
+            if (inst->looping) {
+                //upkeep instance looping
+            }
+            if (inst->fading) {
+                //upkeep instance fading
+            }            
+        }
+    }
 }
 
 void dsound_frame_update(int frame_ms) {
@@ -646,7 +659,7 @@ void dsound_frame_update(int frame_ms) {
     
     SoundInstance* inst;
     
-    REPEAT(i, INSTANCE_COUNT) REPEAT(kind, NUM_KINDS) {
+    REPEAT(kind, NUM_KINDS) REPEAT(i, INSTANCE_COUNT) {
         inst = &sound_instances[kind][i];
         if (inst->exists) {            
             inst->age++;
@@ -656,6 +669,14 @@ void dsound_frame_update(int frame_ms) {
                     inst->scheduled = false;
                     dsound_inst_start(inst);
                 }
+                //update buffer properties
+                double volume_final = inst->sound->volume * inst->volume * VOLUME;
+                double pan_final = inst->sound->pan + inst->pan;
+                double pitch_final = inst->sound->pitch * inst->pitch;
+                
+                inst->clone_buffer->SetVolume(dsound_volume_formula(volume_final));
+                inst->clone_buffer->SetPan(dsound_pan_formula(pan_final));
+                inst->clone_buffer->SetFrequency((DWORD)(pitch_final * inst->sound->frequency));
             }
             if (inst->playing && !inst->looping) {
                 DWORD status = 0;
@@ -1098,13 +1119,13 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     inst->volume = volume_final;
     inst->pan = pan_final;
     inst->pitch = pitch_final;
-    inst->volume_from = volume_final;
-    inst->volume_to = volume_final;
+    inst->fade_from = volume_final;
+    inst->fade_to = volume_final;
     inst->loop_a = sound->loop_a;
     inst->loop_b = sound->loop_b;
     inst->loop_c = sound->loop_c;
-    inst->fade_length = 0;
-    inst->fade_amount = 0;
+    inst->fade_length = 1;
+    inst->fade_count = 1;
     inst->age = 0;
     inst->exists = true;
     inst->playing = false;

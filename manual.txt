@@ -640,18 +640,14 @@
     - sound_add_buffer_raw
     - sound_add_directory
     - sound_get_instance_list
-    - sound_get_pos
-    - sound_set_pos
     - sound_kind_instance_list
     - sound_kind_...
     
   - buffer add raw and etc
   - loop points in add ext and set properties?
   - instance editing
-  - position getting and setting
-  - instance -> SecondaryBuffer property transfer in frame update (scheduler)
   - instance 3d sound computation in frame update
-  - instance loop point and fading upkeep in timer routine (look into the event timer thing)
+  - instance loop point and fading upkeep in timer routine
   - implement master * kind * sound * inst vol/pan/pitch formula, respects SET_MASTERING
 
 
