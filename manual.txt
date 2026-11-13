@@ -478,8 +478,12 @@
 
 - sound_set_loop(index,start,end,count,unit)
     Defines the start and end loop points for a sound or instance.
-    Count defines how many times a sound loops before continuing from the end
-    point. Set count to 0 to loop indefinitely.
+    You can pass in 'noone' or a negative value for the endpoint to use the
+    end of the file.
+    
+    Please keep in mind that loop management is performed in a 10ms thread and
+    as such very short sounds may fail to loop properly. If you need very short
+    loop regions, use separate files or bake the loops into the sound file.
 
 
 - sound_set_properties(index,vol,pitch,pan,persistent)
