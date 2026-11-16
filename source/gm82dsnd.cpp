@@ -153,7 +153,7 @@ extern void debug_message(const wchar_t* msg, int value) {
 
 //objects
     struct SoundResource {
-        LPDIRECTSOUNDBUFFER buffer;
+        int16_t* buffer;
         int index;
         int inst_count;
         int frequency;
@@ -174,7 +174,9 @@ extern void debug_message(const wchar_t* msg, int value) {
 
     struct SoundInstance {
         SoundResource* sound;
-        LPDIRECTSOUNDBUFFER clone_buffer;
+        LPDIRECTSOUNDBUFFER buffer;
+        int write_cursor;
+        int play_cursor;
         int index;
         int age;
         int loop_a;
@@ -211,8 +213,6 @@ extern void debug_message(const wchar_t* msg, int value) {
     int16_t* TertiaryBuffer;
     int BUFFERLENGTH;
     int BUFFERSAFE;
-    int LASTWRITE;
-    int test=1;
 
 
 //global variables
@@ -252,7 +252,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     bool dsound_instance_from_iid(int, int*, int*, SoundInstance**);
     LONG dsound_volume_formula(double);
     LONG dsound_pan_formula(double);
-    void dsound_mixer_thread();
+    void dsound_mixer_thread(SoundInstance*);
 
 //adding sounds
     void dsound_load_builtin(int);
@@ -265,6 +265,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     bool dsound_exists(int);
     void dsound_stop(int);
     void dsound_inst_start(SoundInstance*);
+    void dsound_inst_pause(SoundInstance*);
     void dsound_inst_stop(int);
     void dsound_inst_free(SoundInstance*);
     void dsound_sound_stop(int);
@@ -619,9 +620,8 @@ void dsound_init() {
         //create master mixer buffer and the tertiary copy buffer
         BUFFERSAFE = (int)(SYSTEM_SAMPLE_RATE * ((THREAD_MS*2.0)/1000.0));
         BUFFERLENGTH = BUFFERSAFE * 4;
-        LASTWRITE = -1;
         
-        vibe_check(Device -> CreateSoundBuffer(
+        /*vibe_check(Device->CreateSoundBuffer(
             describe_buffer(
                 DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2,
                 describe_format(SYSTEM_SAMPLE_RATE,2,16),
@@ -630,7 +630,7 @@ void dsound_init() {
             &SecondaryBuffer,
             NULL
         ));
-        vibe_check(SecondaryBuffer -> Play(0, 0, DSBPLAY_LOOPING));
+        vibe_check(SecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING));*/
         
         TertiaryBuffer = (int16_t*)malloc(BUFFERLENGTH * 2); //in words
     
@@ -690,11 +690,10 @@ void dsound_thread_update() {
             }*/
             if (inst->fading) {
                 //upkeep instance fading
-            }            
+            }   
+            dsound_mixer_thread(inst);            
         }
     }
-    
-    dsound_mixer_thread();
 }
 
 void dsound_frame_update(int frame_ms) {
@@ -719,18 +718,19 @@ void dsound_frame_update(int frame_ms) {
                 double pan_final = inst->sound->pan + inst->pan;
                 double pitch_final = inst->sound->pitch * inst->pitch;
                 
-                inst->clone_buffer->SetVolume(dsound_volume_formula(volume_final));
-                inst->clone_buffer->SetPan(dsound_pan_formula(pan_final));
-                inst->clone_buffer->SetFrequency((DWORD)(pitch_final * inst->sound->frequency));
+                inst->buffer->SetVolume(dsound_volume_formula(volume_final));
+                inst->buffer->SetPan(dsound_pan_formula(pan_final));
+                inst->buffer->SetFrequency((DWORD)(pitch_final * inst->sound->frequency));
             }
+            /*todo: check "done" status and play cursor beyond write region
             if (inst->playing && !inst->looping) {
                 //free finished instances
                 DWORD status = 0;
-                inst->clone_buffer->GetStatus(&status);
+                inst->buffer->GetStatus(&status);
                 if (!(status & DSBSTATUS_PLAYING)) {
                     dsound_inst_free(inst);
                 }
-            }
+            }*/
         }
     }
 }
@@ -782,7 +782,7 @@ int dsound_sound_from_instance(int unknown_id) {
         int kind, iid;
         SoundInstance* inst;
         if (dsound_instance_from_iid(unknown_id, &kind, &iid, &inst)) {
-            return inst -> sound -> index;
+            return inst->sound->index;
         } else {
             return ERROR_NON_EXIST;
         }
@@ -939,9 +939,10 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
     //adds a new sound resource from a buffer, in a specific index slot
     
     LPDIRECTSOUNDBUFFER secbuffer;
-    int samplerate, channels, bits;
+    int samplerate, channels, bits, sample_count;
     uint32_t data_length;
     uint8_t* data;
+    int16_t* sample_buffer;
     int mode;
     
     //debug_message(L"loading sound %i",id);
@@ -969,6 +970,41 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         samplerate = format->SampleRate;
         channels = format->Channels;
         bits = format->BitsPerSample;
+        
+        sample_count = (data_length/channels)/(bits/8);
+        
+        sample_buffer = (int16_t*)malloc(sample_count*4);
+        
+        if (bits==8) {
+            if (channels==1) REPEAT(i,sample_count) {
+                //mono -> stereo
+                //8 -> 16 bit
+                sample_buffer[i*2+0]=(32768+256*data[i]) % 65536;
+                sample_buffer[i*2+1]=(32768+256*data[i]) % 65536;
+            } else
+            if (channels==2) REPEAT(i,sample_count) {
+                //8 -> 16 bit
+                sample_buffer[i*2+0]=(32768+256*data[i+0]) % 65536;
+                sample_buffer[i*2+1]=(32768+256*data[i+1]) % 65536;
+            } else {
+                return ERROR_FAIL_LOAD;
+            }
+        } else 
+        if (bits==16) {
+            if (channels==1) REPEAT(i,sample_count) {
+                //mono -> stereo
+                sample_buffer[i*2+0]=data[i];
+                sample_buffer[i*2+1]=data[i];
+            } else 
+            if (channels==2) {
+                //no conversion is required
+                memcpy(sample_buffer,data,sample_count*4);
+            } else {
+                return ERROR_FAIL_LOAD;
+            }
+        } else {
+            return ERROR_FAIL_LOAD;
+        }        
     } else if (memcmp("Ogg",buffer,3)==0) {
         //read ogg
         mode = 1;
@@ -984,6 +1020,8 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         data = (uint8_t*)ogg_data;
         data_length *= channels * 2; //16 bit, but the buffer is char*
         bits = 16;
+        //i will worry about ogg/mp3 later
+        //memcpy(buffer,data,data_length);
     } else if (
         memcmp("ID3",buffer,3) == 0
     ||  (buffer[0] == 0xff && buffer[1] == 0xfb) //check for file w/o id3 tag
@@ -1006,7 +1044,9 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         data_length = info.samples * 2; //16 bit, but the buffer is char*
         samplerate = info.hz;
         channels = info.channels;
-        bits = 16;        
+        bits = 16; 
+        sample_count = info.samples;
+        //COPY DATA HERE
     } else {
         //unrecognized file type - let's try loading it as a module!
         mode = 3;
@@ -1066,7 +1106,8 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         
         samplerate = SYSTEM_SAMPLE_RATE;
         channels = 2;
-        bits = 16;        
+        bits = 16;
+        //COPY DATA HERE
     }
     
     //debug_message(L"sample rate %i",samplerate);
@@ -1075,16 +1116,16 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
     //debug_message(L"data length %i",data_length);
     
     //create the secondary buffer and fill it with pcm data
-        vibe_check(Device->CreateSoundBuffer(
+        /*vibe_check(Device->CreateSoundBuffer(
             describe_buffer(
                 DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY,
-                describe_format(samplerate, channels, bits),
-                data_length
+                describe_format(samplerate, 2, 16),
+                BUFFERLENGTH * 4
             ),
             &secbuffer,
             NULL
-        ));
-        
+        ));*/
+        /*
         void* lock_chunk;
         DWORD lock_size;
         vibe_check(secbuffer->Lock(
@@ -1098,12 +1139,13 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         vibe_check(secbuffer->Unlock(
             lock_chunk, lock_size,
             NULL, NULL
-        ));
+        ));*/
+    
     
     //create the sound resource
         SoundResource* sound = &sound_resources[id];
         sound->index = id;
-        sound->buffer = secbuffer;
+        sound->buffer = sample_buffer;
         sound->kind = kind;
         sound->posmul = channels * (bits / 8);
         sound->length = data_length / sound->posmul;
@@ -1136,17 +1178,9 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
     SoundResource* sound = &sound_resources[index];
     if (!sound->exists) return ERROR_NON_EXIST;
     
-    LPDIRECTSOUNDBUFFER clone;
-    vibe_check(Device->DuplicateSoundBuffer(sound->buffer, &clone));
+    //LPDIRECTSOUNDBUFFER clone;
+    //vibe_check(Device->DuplicateSoundBuffer(sound->buffer, &clone));
     
-    double volume_final = sound->volume * min(1.0,max(0.0,vol)) * VOLUME;
-    double pan_final = sound->pan + pan;
-    double pitch_final = sound->pitch * pitch;
-    
-    clone->SetVolume(dsound_volume_formula(volume_final));
-    clone->SetPan(dsound_pan_formula(pan_final));
-    clone->SetFrequency((DWORD)(pitch_final * sound->frequency));
-
     int kind = sound->kind;
     
     if (kind == 1) {
@@ -1158,9 +1192,31 @@ int dsound_play(int index, bool loop, double vol, double pan, double pitch) {
         MM_INST_ID = LAST_INST_ID;
     }
     
+    LPDIRECTSOUNDBUFFER secbuffer;
+    
+    vibe_check(Device->CreateSoundBuffer(
+        describe_buffer(
+            DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY,
+            describe_format(sound->frequency, 2, 16),
+            BUFFERLENGTH * 4
+        ),
+        &secbuffer,
+        NULL
+    ));
+    
+    double volume_final = sound->volume * min(1.0,max(0.0,vol)) * VOLUME;
+    double pan_final = sound->pan + pan;
+    double pitch_final = sound->pitch * pitch;
+    
+    secbuffer->SetVolume(dsound_volume_formula(volume_final));
+    secbuffer->SetPan(dsound_pan_formula(pan_final));
+    secbuffer->SetFrequency((DWORD)(pitch_final * sound->frequency));
+    
     SoundInstance* inst = &sound_instances[kind][dsound_get_free_instance(kind)];
     inst->sound = sound;
-    inst->clone_buffer = clone;
+    inst->buffer = secbuffer;
+    inst->write_cursor = -1;
+    inst->play_cursor = 0;
     inst->index = LAST_INST_ID;
     inst->volume = volume_final;
     inst->pan = pan_final;
@@ -1199,7 +1255,7 @@ bool dsound_exists(int index) {
         int kind, iid;
         SoundInstance* inst;
         if (dsound_instance_from_iid((int)index, &kind, &iid, &inst)) {
-            return inst -> exists;
+            return inst->exists;
         }
         return false;
     }
@@ -1213,16 +1269,22 @@ void dsound_stop(int index) {
 }
 
 void dsound_inst_start(SoundInstance* inst) {
-    if (inst->looping) {
+    //if (inst->looping) {
         vibe_check(
-            inst->clone_buffer->Play(0, 0, DSBPLAY_LOOPING)
+            inst->buffer->Play(0, 0, DSBPLAY_LOOPING)
         );
-    } else {
-        vibe_check(
-            inst->clone_buffer->Play(0, 0, 0)
-        );
-    }
+    //} else {
+    //    vibe_check(
+    //        inst->clone_buffer->Play(0, 0, 0)
+    //    );
+    //}
     inst->playing = true;
+    //todo: mixer needs some data here
+}
+
+void dsound_inst_pause(SoundInstance* inst) {
+    vibe_check(inst->buffer->Stop());
+    inst->playing = false;
 }
 
 void dsound_inst_stop(int iid) {
@@ -1241,8 +1303,8 @@ void dsound_inst_free(SoundInstance* inst) {
     
     if (inst->exists) {
         inst->sound->inst_count--;
-        inst->clone_buffer->Stop();
-        inst->clone_buffer->Release();
+        inst->buffer->Stop();
+        inst->buffer->Release();
         inst->exists = false;
     }
 }
@@ -1314,8 +1376,7 @@ void dsound_set_pause(int index, bool paused) {
         //pause instance
         if (paused) {
             if (inst->playing) {
-                vibe_check(inst->clone_buffer->Stop());
-                inst->playing = false;
+                dsound_inst_pause(inst);
             }
         } else {
             if (!inst->playing)
@@ -1331,7 +1392,7 @@ void dsound_set_pause(int index, bool paused) {
                 if (inst->exists && inst->sound == sound) {
                     if (paused) {
                         if (inst->playing) {
-                            vibe_check(inst->clone_buffer->Stop());
+                            vibe_check(inst->buffer->Stop());
                             inst->playing = false;
                         }
                     } else {
@@ -1360,8 +1421,7 @@ void dsound_setpause_kind(int kind, bool paused) {
         if (inst->exists) {
             if (paused) {
                 if (inst->playing) {
-                    vibe_check(inst->clone_buffer->Stop());
-                    inst->playing = false;
+                    dsound_inst_pause(inst);
                 }
             } else {
                 if (!inst->playing)
@@ -1374,47 +1434,51 @@ void dsound_setpause_kind(int kind, bool paused) {
 int dsound_get_position(SoundInstance* inst) {
     //returns buffer position in samples
     
-    LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->clone_buffer;
+    return inst->play_cursor;
+    
+    /*LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->buffer;
     DWORD pos = NULL;
     vibe_check(buf8->GetCurrentPosition(&pos,NULL));
-    return ((int)pos) / inst->sound->posmul;
+    return ((int)pos) / inst->sound->posmul;*/
 }
 
 void dsound_set_position(SoundInstance* inst, int position) {
     //sets buffer position in samples
     
-    LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->clone_buffer;
+    inst->play_cursor = (max(0,min((DWORD)position, inst->sound->length-1)));
+    
+    /*LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->clone_buffer;
     DWORD pos = (max(0,min((DWORD)position, inst->sound->length-1))) * inst->sound->posmul;
-    vibe_check(buf8->SetCurrentPosition(pos));
+    vibe_check(buf8->SetCurrentPosition(pos));*/
 }
 
 #pragma endregion
 //---------------------------------------------------------------------------//
 #pragma region mixer
 
-void dsound_mixer_thread() {
-    //finds out how much data dsound wants to consume, produces and writes it
+void dsound_mixer_thread(SoundInstance* inst) {
+    //mixes one active instance into its dsound buffer
     
     //restores a lost buffer
         DWORD status;
-        SecondaryBuffer -> GetStatus(&status);
+        inst->buffer->GetStatus(&status);
         if (status == DSERR_BUFFERLOST) {
-            SecondaryBuffer -> Restore();
+            inst->buffer->Restore();
         }
     
     
-    //get head positions, calculate size to write
+    //get tape position, calculate size to write
         DWORD play_head_bytes, write_head_bytes;
-        vibe_check(SecondaryBuffer -> GetCurrentPosition(&play_head_bytes, &write_head_bytes));
+        vibe_check(inst->buffer->GetCurrentPosition(&play_head_bytes, &write_head_bytes));
         
         int play_head = play_head_bytes / 4;
         int write_head;
         
-        if (LASTWRITE == -1) {
+        if (inst->write_cursor == -1) {
             write_head = write_head_bytes / 4;
-            LASTWRITE = write_head;
+            inst->write_cursor = write_head;
         } else {
-            write_head = LASTWRITE;
+            write_head = inst->write_cursor;
         }
         
         if (write_head < play_head) {
@@ -1434,19 +1498,29 @@ void dsound_mixer_thread() {
             mix_left,
             mix_right,
             mix_normal = 0;
+            
+        int16_t* data = inst->sound->buffer;
+        int length = inst->sound->length;
+        int pc = inst->play_cursor;
     
         REPEAT(sample,samples) {
-            mix_left = 0;
-            mix_right = 0;
-            
-            //mix here using 'sample' as a cursor
-            
-            mix_left=test % 256<128?0.1:0.0;
-            mix_right = mix_left;
-            test++;
+            if (pc<length) {
+                //1:1 mix
+                mix_left = data[pc*2+0]/32768;
+                mix_right = data[pc*2+1]/32768;                
+                pc+=1;
+            } else {
+                mix_left = sample%256<128?0.2:0;
+                mix_right = mix_left;
+            }
             
             TertiaryBuffer[sample*2+0] = (int16_t)(32767.0 * mix_left);
             TertiaryBuffer[sample*2+1] = (int16_t)(32767.0 * mix_right);
+        }
+        inst->play_cursor+=samples;
+        if (inst->play_cursor>inst->sound->length) {
+            inst->playing = false;
+            //todo: mark it as "done" and wait for the play cursor to hit the write area to stop the buffer
         }
     
     //END TIME TO MIX    
@@ -1458,15 +1532,15 @@ void dsound_mixer_thread() {
         void* lock_chunk2;
         DWORD lock_size2;
         
-        vibe_check(SecondaryBuffer -> Lock(
-            LASTWRITE*4, //in bytes
+        vibe_check(inst->buffer->Lock(
+            inst->write_cursor*4, //in bytes
             samples*4, //in bytes
             &lock_chunk1, &lock_size1,
             &lock_chunk2, &lock_size2,
             0
         ));
         
-        LASTWRITE = (write_head + samples) % BUFFERLENGTH;
+        inst->write_cursor = (write_head + samples) % BUFFERLENGTH;
     
     
     //copy data to both chunks of secondary buffer
@@ -1476,7 +1550,7 @@ void dsound_mixer_thread() {
     
     
     //relinquish secondary buffer
-        vibe_check(SecondaryBuffer -> Unlock(
+        vibe_check(inst->buffer->Unlock(
             lock_chunk1, lock_size1,
             lock_chunk2, lock_size2
         ));
