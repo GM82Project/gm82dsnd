@@ -405,7 +405,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
             switch ((int)op) {
                 case 0: inst->volume = min(1.0,max(0.0,value)); break;
                 case 1: inst->pan    = min(1.0,max(-1.0,value)); break;
-                case 2: inst->pitch  = min(inst->sound->maxpitch,max(0.0,value)); break;
+                case 2: inst->pitch  = min(inst->sound->maxpitch,max(100.0/inst->sound->frequency,value)); break;
                 case 5: inst->loop_a = (int)value; break;
                 case 6: inst->loop_b = (int)value; break;
                 case 11: dsound_set_position(inst,(int)value); break;

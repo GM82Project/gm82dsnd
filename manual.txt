@@ -460,6 +460,7 @@
     Sets the pitch value of the sound or instance.
     Pitch is a value from 0 to the maximum allowed for that sound.
     You can retrieve the maximum pitch value with sound_get_max_pitch.
+    Pitches slower than 100hz will clamp to 100hz.
 
 
 - sound_fade(index,volume,time)
