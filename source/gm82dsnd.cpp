@@ -98,11 +98,12 @@ extern void debug_message(const wchar_t* msg, int value) {
 
 
 //directsound
-    LPDIRECTSOUND8 Device;
+    LPDIRECTSOUND Device;
     LPDIRECTSOUNDBUFFER PrimaryBuffer;
+    LPDIRECTSOUNDBUFFER SecondaryBuffer;
     DSBUFFERDESC BufferDescriptor;
     WAVEFORMATEX FormatDescriptor;
-
+    
 
 //wave format
     #pragma pack(push, 1)
@@ -206,6 +207,14 @@ extern void debug_message(const wchar_t* msg, int value) {
     #define NUM_KINDS       8
 
 
+//mixer
+    int16_t* TertiaryBuffer;
+    int BUFFERLENGTH;
+    int BUFFERSAFE;
+    int LASTWRITE;
+    int test=1;
+
+
 //global variables
     SoundResource sound_resources[RESOURCE_COUNT];
     SoundInstance sound_instances[NUM_KINDS][INSTANCE_COUNT];
@@ -243,6 +252,7 @@ extern void debug_message(const wchar_t* msg, int value) {
     bool dsound_instance_from_iid(int, int*, int*, SoundInstance**);
     LONG dsound_volume_formula(double);
     LONG dsound_pan_formula(double);
+    void dsound_mixer_thread();
 
 //adding sounds
     void dsound_load_builtin(int);
@@ -576,7 +586,7 @@ void dsound_init() {
         
         //debug_message(L"system sample %i",SYSTEM_SAMPLE_RATE);
         
-        vibe_check(DirectSoundCreate8(NULL, &Device, NULL));
+        vibe_check(DirectSoundCreate(NULL, &Device, NULL));
         
         //you're supposed to use your application's window here but the
         //desktop window works and i haven't been able to find any problems.
@@ -600,10 +610,29 @@ void dsound_init() {
         vibe_check(PrimaryBuffer->Play(0, 0, DSBPLAY_LOOPING));
         
         //get max samplerate for pitch shifting
+        //todo: not needed after mixer rewrite
         DSCAPS dscaps;
         dscaps.dwSize = sizeof(DSCAPS);
         vibe_check(Device->GetCaps(&dscaps));
         MAX_SAMPLE_RATE = dscaps.dwMaxSecondarySampleRate;
+        
+        //create master mixer buffer and the tertiary copy buffer
+        BUFFERSAFE = (int)(SYSTEM_SAMPLE_RATE * ((THREAD_MS*2.0)/1000.0));
+        BUFFERLENGTH = BUFFERSAFE * 4;
+        LASTWRITE = -1;
+        
+        vibe_check(Device -> CreateSoundBuffer(
+            describe_buffer(
+                DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2,
+                describe_format(SYSTEM_SAMPLE_RATE,2,16),
+                BUFFERLENGTH * 4 //in bytes
+            ),
+            &SecondaryBuffer,
+            NULL
+        ));
+        vibe_check(SecondaryBuffer -> Play(0, 0, DSBPLAY_LOOPING));
+        
+        TertiaryBuffer = (int16_t*)malloc(BUFFERLENGTH * 2); //in words
     
     
     //set up timer callback
@@ -638,7 +667,7 @@ void dsound_thread_update() {
     REPEAT(kind, NUM_KINDS) REPEAT(i, INSTANCE_COUNT) {
         inst = &sound_instances[kind][i];
         if (inst->exists) {
-            if (inst->looping) {
+            /*if (inst->looping) {
                 //upkeep instance looping
                 
                 //margin is half of the thread update timer + 30ms, in samples
@@ -658,12 +687,14 @@ void dsound_thread_update() {
                     dsound_set_position(inst, pos - (inst->loop_b - inst->loop_a + error));
                 }
                 inst->loop_mem_pos = pos;
-            }
+            }*/
             if (inst->fading) {
                 //upkeep instance fading
             }            
         }
     }
+    
+    dsound_mixer_thread();
 }
 
 void dsound_frame_update(int frame_ms) {
@@ -1358,4 +1389,97 @@ void dsound_set_position(SoundInstance* inst, int position) {
 }
 
 #pragma endregion
+//---------------------------------------------------------------------------//
+#pragma region mixer
+
+void dsound_mixer_thread() {
+    //finds out how much data dsound wants to consume, produces and writes it
+    
+    //restores a lost buffer
+        DWORD status;
+        SecondaryBuffer -> GetStatus(&status);
+        if (status == DSERR_BUFFERLOST) {
+            SecondaryBuffer -> Restore();
+        }
+    
+    
+    //get head positions, calculate size to write
+        DWORD play_head_bytes, write_head_bytes;
+        vibe_check(SecondaryBuffer -> GetCurrentPosition(&play_head_bytes, &write_head_bytes));
+        
+        int play_head = play_head_bytes / 4;
+        int write_head;
+        
+        if (LASTWRITE == -1) {
+            write_head = write_head_bytes / 4;
+            LASTWRITE = write_head;
+        } else {
+            write_head = LASTWRITE;
+        }
+        
+        if (write_head < play_head) {
+            //wrapped
+            write_head += BUFFERLENGTH;
+        }
+        
+        int samples = min(BUFFERSAFE, play_head + BUFFERSAFE - write_head);        
+    
+        //if we're running too fast, stop
+        if (samples <= 0) return;
+    
+    
+    //TIME TO MIX
+    
+        double
+            mix_left,
+            mix_right,
+            mix_normal = 0;
+    
+        REPEAT(sample,samples) {
+            mix_left = 0;
+            mix_right = 0;
+            
+            //mix here using 'sample' as a cursor
+            
+            mix_left=test % 256<128?0.1:0.0;
+            mix_right = mix_left;
+            test++;
+            
+            TertiaryBuffer[sample*2+0] = (int16_t)(32767.0 * mix_left);
+            TertiaryBuffer[sample*2+1] = (int16_t)(32767.0 * mix_right);
+        }
+    
+    //END TIME TO MIX    
+    
+    
+    //acquire secondary buffer
+        void* lock_chunk1;
+        DWORD lock_size1;
+        void* lock_chunk2;
+        DWORD lock_size2;
+        
+        vibe_check(SecondaryBuffer -> Lock(
+            LASTWRITE*4, //in bytes
+            samples*4, //in bytes
+            &lock_chunk1, &lock_size1,
+            &lock_chunk2, &lock_size2,
+            0
+        ));
+        
+        LASTWRITE = (write_head + samples) % BUFFERLENGTH;
+    
+    
+    //copy data to both chunks of secondary buffer
+        memcpy(lock_chunk1, TertiaryBuffer, lock_size1);
+        if (lock_chunk2 != NULL)
+            memcpy(lock_chunk2, TertiaryBuffer + lock_size1, lock_size2);
+    
+    
+    //relinquish secondary buffer
+        vibe_check(SecondaryBuffer -> Unlock(
+            lock_chunk1, lock_size1,
+            lock_chunk2, lock_size2
+        ));
+}
+
 //---------------------------------------------------------------------------//
