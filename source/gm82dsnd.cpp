@@ -974,6 +974,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         sample_count = (data_length/channels)/(bits/8);
         
         sample_buffer = (int16_t*)malloc(sample_count*4);
+        uint16_t* data16 = (uint16_t*)data;
         
         if (bits==8) {
             if (channels==1) REPEAT(i,sample_count) {
@@ -993,8 +994,8 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         if (bits==16) {
             if (channels==1) REPEAT(i,sample_count) {
                 //mono -> stereo
-                sample_buffer[i*2+0]=data[i];
-                sample_buffer[i*2+1]=data[i];
+                sample_buffer[i*2+0]=data16[i];
+                sample_buffer[i*2+1]=data16[i];
             } else 
             if (channels==2) {
                 //no conversion is required
@@ -1506,8 +1507,8 @@ void dsound_mixer_thread(SoundInstance* inst) {
         REPEAT(sample,samples) {
             if (pc<length) {
                 //1:1 mix
-                mix_left = data[pc*2+0]/32768;
-                mix_right = data[pc*2+1]/32768;                
+                mix_left = data[pc*2+0]/32768.0;
+                mix_right = data[pc*2+1]/32768.0;
                 pc+=1;
             } else {
                 mix_left = sample%256<128?0.2:0;
