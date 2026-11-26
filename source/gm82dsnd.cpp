@@ -989,7 +989,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         sample_count = (data_length / channels) / (bits / 8);
         
         sample_buffer = (float*)malloc(sample_count * 2 * sizeof(float));
-        uint16_t* data16 = (uint16_t*)data;
+        int16_t* data16 = (int16_t*)data;
         
         if (bits == 8) {
             if (channels == 1) REPEAT(i, sample_count) {
@@ -1595,8 +1595,10 @@ void dsound_mixer_thread(SoundInstance* inst) {
     
     //copy data to both chunks of secondary buffer
         memcpy(lock_chunk1, TertiaryBuffer, lock_size1);
-        if (lock_chunk2 != NULL)
-            memcpy(lock_chunk2, TertiaryBuffer + lock_size1, lock_size2);
+        //note to future renex: Tertiary is u16 so the addition of a lock size in bytes ends up doubled
+        //thanks floogle
+        if (lock_chunk2 != NULL) 
+            memcpy(lock_chunk2, TertiaryBuffer + lock_size1 / 2, lock_size2);
     
     
     //relinquish secondary buffer
