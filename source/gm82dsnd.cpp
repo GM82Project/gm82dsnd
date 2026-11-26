@@ -166,7 +166,6 @@ extern void debug_message(const wchar_t* msg, int value) {
         float volume;
         float pan;
         float pitch;
-        float maxpitch;
         bool exists = false;
         bool loaded;
         bool persistent;
@@ -461,7 +460,6 @@ GMREAL __dsound_getter(double index, double op) {
                 case 7: return (double)inst->sound->frequency;
                 case 8: return (double)inst->sound->length;
                 case 9: return (double)inst->loop_c;
-                case 10: return (double)inst->sound->maxpitch;
                 case 11: return (double)dsound_get_position(inst);
             }
         }
@@ -482,7 +480,6 @@ GMREAL __dsound_getter(double index, double op) {
         case 7: return (double)sound_resources[(int)index].frequency;
         case 8: return (double)sound_resources[(int)index].length;
         case 9: return (double)sound_resources[(int)index].loop_c;
-        case 10: return (double)sound_resources[(int)index].maxpitch;
     }
     
     return ERROR_GENERIC;
@@ -1036,6 +1033,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         bits = 16;
         //i will worry about ogg/mp3 later
         //memcpy(buffer,data,data_length);
+        free(data);
     } else if (
         memcmp("ID3",buffer,3) == 0
     ||  (buffer[0] == 0xff && buffer[1] == 0xfb) //check for file w/o id3 tag
@@ -1061,6 +1059,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         bits = 16; 
         sample_count = info.samples;
         //COPY DATA HERE
+        free(data);
     } else {
         //unrecognized file type - let's try loading it as a module!
         mode = 3;
@@ -1122,6 +1121,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         channels = 2;
         bits = 16;
         //COPY DATA HERE
+        free(data);
     }
     
     //debug_message(L"sample rate %i",samplerate);
@@ -1129,57 +1129,24 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
     //debug_message(L"bits %i",bits);        
     //debug_message(L"data length %i",data_length);
     
-    //create the secondary buffer and fill it with pcm data
-        /*vibe_check(Device->CreateSoundBuffer(
-            describe_buffer(
-                DSBCAPS_GLOBALFOCUS | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPAN | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLFREQUENCY,
-                describe_format(samplerate, 2, 16),
-                BUFFERLENGTH * 4
-            ),
-            &secbuffer,
-            NULL
-        ));*/
-        /*
-        void* lock_chunk;
-        DWORD lock_size;
-        vibe_check(secbuffer->Lock(
-            0, data_length,
-            &lock_chunk, &lock_size,
-            NULL, NULL, 0
-        ));
-        
-        memcpy(lock_chunk, data, lock_size);
-        
-        vibe_check(secbuffer->Unlock(
-            lock_chunk, lock_size,
-            NULL, NULL
-        ));*/
-    
-    
     //create the sound resource
-        SoundResource* sound = &sound_resources[id];
-        sound->index = id;
-        sound->buffer = sample_buffer;
-        sound->kind = kind;
-        sound->posmul = channels * (bits / 8);
-        sound->length = data_length / sound->posmul;
-        sound->loop_a = 0;
-        sound->loop_b = sound->length;
-        sound->loop_c = 0;
-        sound->exists = true;
-        sound->loaded = true;
-        sound->persistent = false;
-        sound->frequency = samplerate;
-        sound->volume = 1.0;
-        sound->pan = 0.0;
-        sound->pitch = 1.0;
-        sound->maxpitch = MAX_SAMPLE_RATE / ((float)samplerate);
-        sound->inst_count = 0;
-    
-    if (mode != 0) {
-        //clean up temporary buffer from compressed types
-        free(data);
-    }
+    SoundResource* sound = &sound_resources[id];
+    sound->index = id;
+    sound->buffer = sample_buffer;
+    sound->kind = kind;
+    sound->posmul = channels * (bits / 8);
+    sound->length = data_length / sound->posmul;
+    sound->loop_a = 0;
+    sound->loop_b = sound->length;
+    sound->loop_c = 0;
+    sound->exists = true;
+    sound->loaded = true;
+    sound->persistent = false;
+    sound->frequency = samplerate;
+    sound->volume = 1.0;
+    sound->pan = 0.0;
+    sound->pitch = 1.0;
+    sound->inst_count = 0;
     
     return id;
 }

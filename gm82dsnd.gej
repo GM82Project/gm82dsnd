@@ -352,17 +352,6 @@
 					"returntype": 2
 				},
 				{
-					"name": "sound_get_max_pitch",
-					"extname": "",
-					"calltype": 2,
-					"helpline": "sound_get_max_pitch(ind)",
-					"hidden": false,
-					"argtypes": [
-						2
-					],
-					"returntype": 2
-				},
-				{
 					"name": "sound_get_name",
 					"extname": "",
 					"calltype": 2,
@@ -988,11 +977,6 @@
 				{
 					"name": "__dsound_etter_loopc",
 					"value": "9",
-					"hidden": true
-				},
-				{
-					"name": "__dsound_etter_maxpitch",
-					"value": "10",
 					"hidden": true
 				},
 				{
