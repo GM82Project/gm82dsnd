@@ -364,15 +364,15 @@
 
 
 #define sound_set_loop
-    ///sound_set_loop(index,start,end,unit)
+    ///sound_set_loop(index,start,end,count,unit)
     //index: sound instance
     //start: start of the looping region
     //end: end of the looping region
+    //count: number of loops
     //unit: one of the unit_ constants
     //Sets the loop points to use when looping a sound.
     //You can pass in 'noone' or a negative value for the endpoint to use the end of the file.
-    //Please keep in mind that loop management is performed in a 10ms thread and as such very short sounds may fail to loop properly.
-    //If you need very short loop regions, use separate files or bake the loops into the sound file.
+    //Pass 0 for the count to loop infinitely.
 
     var __snd,__samples,__rcp,__a,__b;
     
@@ -382,7 +382,7 @@
     __samples=sound_get_length(__snd,unit_samples)
     __freq=sound_get_frequency(__snd)
     
-    switch (argument3) {
+    switch (argument4) {
         case unit_samples: {
             __a=round(argument1)
             __b=round(argument2)
@@ -404,7 +404,8 @@
     __dsound_loopsetter(
         __snd,
         clamp(__a,0,__samples),
-        clamp(__b,0,__samples)
+        clamp(__b,0,__samples),
+        max(0,argument3)
     )
 
 
@@ -442,6 +443,16 @@
         case unit_unitary: return __samp/__dsound_getter(__snd,__dsound_etter_length)
         default: {__dsound_error("sound_get_loop_b","("+string(argument1)+") is not a valid unit type.") return noone}
     }
+
+
+#define sound_get_loop_count
+    ///sound_get_loop_count(index)
+    var __snd;
+    
+    __snd=__dsound_name_parser(argument0,"sound_get_loop_count",false)
+    if (__snd<0) return noone
+    
+    return __dsound_getter(__snd,__dsound_etter_loopc)
 
 
 // play control -------------------------------------------------------------//

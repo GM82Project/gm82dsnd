@@ -458,8 +458,7 @@
 
 - sound_pitch(index,pitch)
     Sets the pitch value of the sound or instance.
-    Pitch is a value from 0 to the maximum allowed for that sound.
-    You can retrieve the maximum pitch value with sound_get_max_pitch.
+    Pitch is a value from 0x to 16x.
     Pitches slower than 100hz will clamp to 100hz.
 
 
@@ -477,18 +476,46 @@
     This function is only valid for sound instances.
 
 
-- sound_set_loop(index,start,end,count,unit)
-    Defines the start and end loop points for a sound or instance.
-    You can pass in 'noone' or a negative value for the endpoint to use the
-    end of the file.
-    
-    Please keep in mind that loop management is performed in a 10ms thread and
-    as such very short sounds may fail to loop properly. If you need very short
-    loop regions, use separate files or bake the loops into the sound file.
-
-
 - sound_set_properties(index,vol,pitch,pan,persistent)
     Shortcut to set all properties of a sound at once.
+
+-------------------------------------------------------------------------------
+
+  Looping
+  -------
+  
+  
+    Sample-accurate looping playback with loop counts is fully supported.
+    
+    When playing a sound, using sound_loop functions will use the loop points
+    set with these functions, while using sound_play will ignore the loop data
+    and play the sound normally from start to end.
+    
+    Both sounds and instances have their own loop information. When a sound is
+    looped, the instance receives the sound's loop information as a default
+    which can then be further modified using thse functions, just like with
+    the other sound/instance properties such as volume, pan etc.
+    
+    When a looping sound completes the number of loops, it will continue
+    playing from point B until the end of the file. Use a count of 0 for
+    infinitely looping sounds.
+
+
+- sound_set_loop(index,start,end,count,unit)
+    Defines the start and end loop points for a sound or instance, in the
+    specified unit.
+    You can pass in 'noone' or a negative value for the endpoint to use the
+    end of the file.
+    Pass 0 for the count to use an infinite amount of loops.
+    
+- sound_get_loop_a(index,unit)
+    Returns the start of the loop region in the specified unit.
+
+- sound_get_loop_b(index,unit)
+    Returns the end of the loop region in the specified unit.
+
+- sound_get_loop_count(index)
+    Returns the set number of loops.
 
 
 -------------------------------------------------------------------------------
