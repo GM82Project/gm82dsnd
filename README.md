@@ -9,5 +9,6 @@ Written by renex. Requires Core and Buffer.
 Includes contributions from:
   
 - DFelipehDEV
+- Floogle
 
 [Read the manual](manual.txt).
