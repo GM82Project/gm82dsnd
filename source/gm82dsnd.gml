@@ -238,9 +238,12 @@
 #define sound_get_length
     ///sound_get_length(ind,[unit])
     
-    var __len;
+    var __snd,__len;
     
-    __len=__dsound_getter(__dsound_name_parser(argument0,"sound_get_length",false),__dsound_etter_length)
+    __snd=__dsound_name_parser(argument0,"sound_get_length",false)    
+    if (__snd<0) exit
+    
+    __len=__dsound_getter(__snd,__dsound_etter_length)
     
     if (argument_count<2) return __len/__dsound_getter(__snd,__dsound_etter_frequency)
     
