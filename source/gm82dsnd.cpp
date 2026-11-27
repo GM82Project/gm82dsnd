@@ -573,15 +573,14 @@ GMREAL __dsound_loopsetter(double index, double loopa, double loopb, double loop
 //---------------------------------------------------------------------------//
 #pragma region internals
 
+double floorpo2(double val) {
+    int i=2;
+    do {i*=2;} while (i<val);
+    return i/2.0;
+}
+
 double pitch_shifter(double pitch) {
-    //TODO: yandere dev
-    if (pitch <= 2.0) return pitch;
-    if (pitch <= 4.0) return pitch/2.0;
-    if (pitch <= 8.0) return pitch/4.0;
-    if (pitch <= 16.0) return pitch/8.0;
-    if (pitch <= 32.0) return pitch/16.0;
-    if (pitch <= 64.0) return pitch/32.0;
-    return pitch/64.0;
+    return pitch / floorpo2(pitch);
 }
 
 
@@ -1499,20 +1498,13 @@ void dsound_mixer_thread(SoundInstance* inst) {
         );
         
         //TODO: this is insanely ugly lol
-        int stride = 1;
-        if (inst->pitch > 64) stride=64;
-        if (inst->pitch > 32) stride=32;
-        if (inst->pitch > 16) stride=16;
-        else if (inst->pitch > 8) stride=8;
-        else if (inst->pitch > 4) stride=4;
-        else if (inst->pitch > 2) stride=2;
+        int stride = (int)floorpo2(inst->pitch);
         
         REPEAT(sample,samples) {
             mix_left = 0;
             mix_right = 0;
             
             if (pc<length) {                
-                //todo: this is unfinished
                 REPEAT(stride) {
                     mix_left  += data[pc*2 + 0];
                     mix_right += data[pc*2 + 1];
