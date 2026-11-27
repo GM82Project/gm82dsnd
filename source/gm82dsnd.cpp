@@ -941,6 +941,7 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
     int samplerate, channels, bits, sample_count;
     uint32_t data_length;
     uint8_t* data;
+    int16_t* data16;
     float* sample_buffer;
     int mode;
     
@@ -970,8 +971,8 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         
         sample_count = (data_length / channels) / (bits / 8);
         
+        data16 = (int16_t*)data;
         sample_buffer = (float*)malloc(sample_count * 2 * sizeof(float));
-        int16_t* data16 = (int16_t*)data;
         
         if (bits == 8) {
             if (channels == 1) REPEAT(i, sample_count) {
@@ -1006,19 +1007,25 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         mode = 1;
 
         int16_t* ogg_data = NULL;
-        data_length = stb_vorbis_decode_memory(
+        sample_count = stb_vorbis_decode_memory(
             (const uint8_t*)buffer, length,
             &channels, &samplerate, &ogg_data
         );
         
-        if (data_length <= 0) return ERROR_FAIL_LOAD;
+        if (sample_count <= 0) return ERROR_FAIL_LOAD;
         
-        data = (uint8_t*)ogg_data;
-        data_length *= channels * 2; //16 bit, but the buffer is char*
         bits = 16;
-        //i will worry about ogg/mp3 later
-        //memcpy(buffer,data,data_length);
-        free(data);
+        data_length = sample_count * channels * 2;
+        
+        data16 = ogg_data;
+        sample_buffer = (float*)malloc(sample_count * 2 * sizeof(float));
+        REPEAT(i, sample_count) {
+            //stereo 16 bit
+            sample_buffer[i*2 + 0] = data16[i*2 + 0] / 32768.0;
+            sample_buffer[i*2 + 1] = data16[i*2 + 1] / 32768.0;
+        }
+        
+        free(ogg_data);
     } else if (
         memcmp("ID3",buffer,3) == 0
     ||  (buffer[0] == 0xff && buffer[1] == 0xfb) //check for file w/o id3 tag
@@ -1037,14 +1044,22 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
             return ERROR_FAIL_LOAD;
         }     
         
-        data = (uint8_t*)info.buffer;
-        data_length = info.samples * 2; //16 bit, but the buffer is char*
         samplerate = info.hz;
         channels = info.channels;
         bits = 16; 
-        sample_count = info.samples;
-        //COPY DATA HERE
-        free(data);
+        data_length = info.samples * 2;
+        
+        sample_count = info.samples / channels;
+        
+        data16 = (int16_t*)info.buffer;
+        sample_buffer = (float*)malloc(sample_count * 2 * sizeof(float));
+        REPEAT(i, sample_count) {
+            //stereo 16 bit
+            sample_buffer[i*2 + 0] = data16[i*2 + 0] / 32768.0;
+            sample_buffer[i*2 + 1] = data16[i*2 + 1] / 32768.0;
+        }
+        
+        free(info.buffer);
     } else {
         //unrecognized file type - let's try loading it as a module!
         mode = 3;
@@ -1105,7 +1120,16 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         samplerate = SYSTEM_SAMPLE_RATE;
         channels = 2;
         bits = 16;
-        //COPY DATA HERE
+        sample_count = data_length / 4;
+        
+        data16 = (int16_t*)data;
+        sample_buffer = (float*)malloc(sample_count * 2 * sizeof(float));
+        REPEAT(i, sample_count) {
+            //stereo 16 bit
+            sample_buffer[i*2 + 0] = data16[i*2 + 0] / 32768.0;
+            sample_buffer[i*2 + 1] = data16[i*2 + 1] / 32768.0;
+        }
+        
         free(data);
     }
     
