@@ -435,13 +435,6 @@
     Returns the pitch value of the sound or instance.
 
 
-- sound_get_max_pitch(index)
-    Returns the maximum allowed pitch value for a sound.
-    Usually, this will be 200000 divided by the sound's sample rate,
-    but the exact figure may vary by system.
-    Average acceptable values are usually under 4.
-
-
 - sound_get_preload(index)
     Returns the preload flag of the sound resource, as set in the IDE.
 
@@ -458,7 +451,7 @@
 
 - sound_pitch(index,pitch)
     Sets the pitch value of the sound or instance.
-    Pitch is a value from 0x to 16x.
+    Pitch is a multiplier for the speed of the sound.
     Pitches slower than 100hz will clamp to 100hz.
 
 

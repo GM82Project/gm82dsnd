@@ -56,7 +56,12 @@
 #define ERROR_FAIL_LOAD   -3
 #define ERROR_NO_SPACE    -4
 
-#define REPEAT(x,n) for (int x = 0; x < (n); ++x)
+#define EXPAND(x) x
+#define GET_MACRO(_1, _2, NAME, ...) NAME
+
+#define REPEAT2(x,n) for (int x = 0; x < (n); ++x)
+#define REPEAT1(n) for (int _ = 0; _ < (n); ++_)
+#define REPEAT(...) EXPAND(GET_MACRO(__VA_ARGS__, REPEAT2, REPEAT1)(__VA_ARGS__))
 
 #define runner_function(type, name, addr, ...)\
     type (*name)(__VA_ARGS__) = (type(*)(__VA_ARGS__))addr;
@@ -417,7 +422,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
             switch ((int)op) {
                 case 0: inst->volume = min(1.0,max(0.0,value)); break;
                 case 1: inst->pan    = min(1.0,max(-1.0,value)); break;
-                case 2: inst->pitch  = min(16.0,max(100.0/inst->sound->frequency,value)); break;
+                case 2: inst->pitch  = max(100.0/inst->sound->frequency,value); break;
                 case 5: inst->loop_a = (int)value; break;
                 case 6: inst->loop_b = (int)value; break;
                 case 9: inst->loop_c = (int)value; break;
@@ -433,7 +438,7 @@ GMREAL __dsound_setter(double index, double op, double value) {
     switch ((int)op) {
         case 0: sound_resources[(int)index].volume = min(1.0,max(0.0,value)); break;
         case 1: sound_resources[(int)index].pan    = min(1.0,max(-1.0,value)); break;
-        case 2: sound_resources[(int)index].pitch  = min(16.0,max(100.0/sound_resources[(int)index].frequency,value)); break;
+        case 2: sound_resources[(int)index].pitch  = max(100.0/sound_resources[(int)index].frequency,value); break;
         case 5: sound_resources[(int)index].loop_a = (int)value; break;
         case 6: sound_resources[(int)index].loop_b = (int)value; break;
         case 9: sound_resources[(int)index].loop_c = (int)value; break;
@@ -569,10 +574,14 @@ GMREAL __dsound_loopsetter(double index, double loopa, double loopb, double loop
 #pragma region internals
 
 double pitch_shifter(double pitch) {
+    //TODO: yandere dev
     if (pitch <= 2.0) return pitch;
     if (pitch <= 4.0) return pitch/2.0;
     if (pitch <= 8.0) return pitch/4.0;
-    return pitch/8.0;
+    if (pitch <= 16.0) return pitch/8.0;
+    if (pitch <= 32.0) return pitch/16.0;
+    if (pitch <= 64.0) return pitch/32.0;
+    return pitch/64.0;
 }
 
 
@@ -672,34 +681,21 @@ void dsound_init() {
 }
 
 void dsound_thread_update() {
-    //thread; uses THREAD_MS increments
+    //threaded; uses THREAD_MS increments
     
     SoundInstance* inst;
     
     REPEAT(kind, NUM_KINDS) REPEAT(i, INSTANCE_COUNT) {
         inst = &sound_instances[kind][i];
+        //TODO: this is a good place to perform dead instance buffer cleanup
+        /*if (inst->dying) {
+            //etc
+            if (the play cursor is beyond the write cursor) {
+                dsound_inst_free(inst);
+            }
+        }
+        }*/
         if (inst->exists) {
-            /*if (inst->looping) {
-                //upkeep instance looping
-                
-                //margin is half of the thread update timer + 30ms, in samples
-                int error = (int)((30.0 / 1000.0) * inst->sound->frequency);
-                int margin = (int)(((THREAD_MS / 2.0) / 1000.0) * inst->sound->frequency) + error;
-                
-                int pos = dsound_get_position(inst);                
-                
-                if (pos < inst->loop_mem_pos && inst->loop_a > 0) {
-                    //we wrapped around and overshot
-                    dsound_set_position(inst, inst->loop_a);
-                } else if (
-                    pos > inst->loop_b - margin
-                 && inst->loop_b < inst->sound->length - margin
-                ) {
-                    //loop normally
-                    dsound_set_position(inst, pos - (inst->loop_b - inst->loop_a + error));
-                }
-                inst->loop_mem_pos = pos;
-            }*/
             if (inst->fading) {
                 //upkeep instance fading
             }   
@@ -709,8 +705,8 @@ void dsound_thread_update() {
 }
 
 void dsound_frame_update(int frame_ms) {
-    //gml frame
-    //update instance life and cleanup here
+    //gml step
+    //update instance life and tick the scheduler
     
     SoundInstance* inst;
     
@@ -733,16 +729,7 @@ void dsound_frame_update(int frame_ms) {
                 inst->buffer->SetVolume(dsound_volume_formula(volume_final));
                 inst->buffer->SetPan(dsound_pan_formula(pan_final));
                 inst->buffer->SetFrequency((DWORD)(pitch_shifter(pitch_final) * inst->sound->frequency));
-            }
-            /*todo: check "done" status and play cursor beyond write region
-            if (inst->playing && !inst->looping) {
-                //free finished instances
-                DWORD status = 0;
-                inst->buffer->GetStatus(&status);
-                if (!(status & DSBSTATUS_PLAYING)) {
-                    dsound_inst_free(inst);
-                }
-            }*/
+            }            
         }
     }
 }
@@ -880,10 +867,9 @@ void dsound_load_builtin(int index) {
         
         dsound_add_mem_index(index, buffer, size, sound->kind);
         
-        sound_resources[index].volume = pow(
-            10.0,
-            (sound->volume) * 3.0 - 1.0
-        ) / 100.0;
+        //apply volume and pan from the sound resource
+        sound_resources[index].volume =
+            pow(10.0, (sound->volume) * 3.0 - 1.0) / 100.0;        
         sound_resources[index].pan = sound->pan;
         
         free(buffer);
@@ -898,7 +884,8 @@ void dsound_load_builtin(int index) {
         );
         
         //apply volume and pan from the sound resource
-        sound_resources[index].volume = pow(10.0,(sound->volume)*3.0-1.0)/100.0;
+        sound_resources[index].volume =
+            pow(10.0, (sound->volume) * 3.0 - 1.0) / 100.0;        
         sound_resources[index].pan = sound->pan;
         
         //we should also destroy it to save memory
@@ -956,8 +943,6 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
     uint8_t* data;
     float* sample_buffer;
     int mode;
-    
-    //debug_message(L"loading sound %i",id);
     
     //find file type from magic number
     if (memcmp("RIF",buffer,3) == 0) {
@@ -1124,10 +1109,12 @@ int dsound_add_mem_index(int id, uint8_t* buffer, int length, int kind) {
         free(data);
     }
     
-    //debug_message(L"sample rate %i",samplerate);
-    //debug_message(L"channels %i",channels);
-    //debug_message(L"bits %i",bits);        
-    //debug_message(L"data length %i",data_length);
+    /** /
+        debug_message(L"sample rate %i",samplerate);
+        debug_message(L"channels %i",channels);
+        debug_message(L"bits %i",bits);        
+        debug_message(L"data length %i",data_length);
+    /**/
     
     //create the sound resource
     SoundResource* sound = &sound_resources[id];
@@ -1418,21 +1405,12 @@ int dsound_get_position(SoundInstance* inst) {
     //returns buffer position in samples
     
     return inst->play_cursor;
-    
-    /*LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->buffer;
-    DWORD pos = NULL;
-    vibe_check(buf8->GetCurrentPosition(&pos,NULL));
-    return ((int)pos) / inst->sound->posmul;*/
 }
 
 void dsound_set_position(SoundInstance* inst, int position) {
     //sets buffer position in samples
     
     inst->play_cursor = (max(0,min((DWORD)position, inst->sound->length-1)));
-    
-    /*LPDIRECTSOUNDBUFFER8 buf8 = (LPDIRECTSOUNDBUFFER8)inst->clone_buffer;
-    DWORD pos = (max(0,min((DWORD)position, inst->sound->length-1))) * inst->sound->posmul;
-    vibe_check(buf8->SetCurrentPosition(pos));*/
 }
 
 #pragma endregion
@@ -1458,26 +1436,27 @@ void dsound_mixer_thread(SoundInstance* inst) {
         int write_head;
         
         if (inst->write_cursor == -1) {
+            //first write; initialize
             write_head = write_head_bytes / 4;
             inst->write_cursor = write_head;
         } else {
+            //resume from the last write head position
             write_head = inst->write_cursor;
         }
         
         if (write_head < play_head) {
-            //wrapped
+            //wrapped around the circular buffer
             write_head += BUFFERLENGTH;
         }
         
+        //make sure we don't write too much data
         int samples = min(BUFFERSAFE, play_head + BUFFERSAFE - write_head);        
     
-        //if we're running too fast, stop
+        //make sure we also aren't running too fast
         if (samples <= 0) return;
     
     
     //TIME TO MIX
-    
-        //TODO: do i even need a float mixer if i'm not doing postproc? it could be i16
     
         double
             mix_left,
@@ -1495,8 +1474,37 @@ void dsound_mixer_thread(SoundInstance* inst) {
             )
         );
         
+        //TODO: this is insanely ugly lol
+        int stride = 1;
+        if (inst->pitch > 64) stride=64;
+        if (inst->pitch > 32) stride=32;
+        if (inst->pitch > 16) stride=16;
+        else if (inst->pitch > 8) stride=8;
+        else if (inst->pitch > 4) stride=4;
+        else if (inst->pitch > 2) stride=2;
+        
         REPEAT(sample,samples) {
-            if (pc<length) {
+            mix_left = 0;
+            mix_right = 0;
+            
+            if (pc<length) {                
+                //todo: this is unfinished
+                REPEAT(stride) {
+                    mix_left  += data[pc*2 + 0];
+                    mix_right += data[pc*2 + 1];
+                    pc += 1;
+                    
+                    //TODO: backward direction logic
+                    if (upkeep_looping && pc >= inst->loop_b) {
+                        pc = inst->loop_a;
+                        inst->loop_count += 1;
+                    }
+                }
+                
+                mix_left /= stride;
+                mix_right /= stride;                
+                
+                /*
                 int pc2 = pc*2;
                 if (inst->pitch > 8) {
                     //8:1 mix
@@ -1521,13 +1529,9 @@ void dsound_mixer_thread(SoundInstance* inst) {
                 }
                 if (upkeep_looping && pc >= inst->loop_b)
                     pc -= inst->loop_b - inst->loop_a;
-                    inst->loop_count += 1;
+                    inst->loop_count += 1;*/
             } else {
-                //sound data done; write silence...
-                //TODO: remove debug sound generator
-                mix_left = pc%512 / 8192.0;
-                mix_right = -mix_left;
-                pc += 1;
+                //TODO: sound data done; mark instance as dying                
             }
             
             TertiaryBuffer[sample*2 + 0] = (int16_t)(32767.0 * mix_left);
