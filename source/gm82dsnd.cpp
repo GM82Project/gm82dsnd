@@ -580,6 +580,7 @@ double floorpo2(double val) {
 }
 
 double pitch_shifter(double pitch) {
+    //if (pitch<1.0) return pitch * floorpo2(1.0/pitch);    
     return pitch / floorpo2(pitch);
 }
 
@@ -697,8 +698,14 @@ void dsound_thread_update() {
         if (inst->exists) {
             if (inst->fading) {
                 //upkeep instance fading
-            }   
-            dsound_mixer_thread(inst);            
+            }
+            
+            dsound_mixer_thread(inst);
+            
+            if (SET_SCHEDULER) {
+                double pitch_final = inst->sound->pitch * inst->pitch;
+                inst->buffer->SetFrequency((DWORD)(pitch_shifter(pitch_final) * inst->sound->frequency));
+            }
         }
     }
 }
@@ -723,11 +730,9 @@ void dsound_frame_update(int frame_ms) {
                 //update buffer properties
                 double volume_final = inst->sound->volume * inst->volume * VOLUME;
                 double pan_final = inst->sound->pan + inst->pan;
-                double pitch_final = inst->sound->pitch * inst->pitch;
                 
                 inst->buffer->SetVolume(dsound_volume_formula(volume_final));
                 inst->buffer->SetPan(dsound_pan_formula(pan_final));
-                inst->buffer->SetFrequency((DWORD)(pitch_shifter(pitch_final) * inst->sound->frequency));
             }            
         }
     }
@@ -1497,61 +1502,58 @@ void dsound_mixer_thread(SoundInstance* inst) {
             )
         );
         
-        //TODO: this is insanely ugly lol
-        int stride = (int)floorpo2(inst->pitch);
+        int stride;
         
-        REPEAT(sample,samples) {
-            mix_left = 0;
-            mix_right = 0;
+        /*if (inst->pitch<1.0) {
+            stride = (int)floorpo2(1.0/inst->pitch);
             
-            if (pc<length) {                
-                REPEAT(stride) {
-                    mix_left  += data[pc*2 + 0];
-                    mix_right += data[pc*2 + 1];
+            int counter = 0;
+            
+            REPEAT(sample,samples) {
+                TertiaryBuffer[sample*2 + 0] = (int16_t)(32767.0 * data[pc*2 + 0]);
+                TertiaryBuffer[sample*2 + 1] = (int16_t)(32767.0 * data[pc*2 + 1]);
+                
+                counter += 1;
+                if (counter == stride) {
+                    counter = 0;
                     pc += 1;
-                    
+                
                     //TODO: backward direction logic
                     if (upkeep_looping && pc >= inst->loop_b) {
                         pc = inst->loop_a;
                         inst->loop_count += 1;
                     }
                 }
-                
-                mix_left /= stride;
-                mix_right /= stride;                
-                
-                /*
-                int pc2 = pc*2;
-                if (inst->pitch > 8) {
-                    //8:1 mix
-                    mix_left  = (data[pc2 + 0] + data[pc2 + 2] + data[pc2 + 4] + data[pc2 + 6] + data[pc2 + 8] + data[pc2 + 10] + data[pc2 + 12] + data[pc2 + 14]) * 0.125;
-                    mix_right = (data[pc2 + 1] + data[pc2 + 3] + data[pc2 + 5] + data[pc2 + 7] + data[pc2 + 9] + data[pc2 + 11] + data[pc2 + 13] + data[pc2 + 15]) * 0.125;
-                    pc += 8;
-                } else if (inst->pitch > 4) {
-                    //4:1 mix
-                    mix_left  = (data[pc2 + 0] + data[pc2 + 2] + data[pc2 + 4] + data[pc2 + 6]) * 0.25;
-                    mix_right = (data[pc2 + 1] + data[pc2 + 3] + data[pc2 + 5] + data[pc2 + 7]) * 0.25;
-                    pc += 4;
-                } else if (inst->pitch > 2) {
-                    //2:1 mix
-                    mix_left  = (data[pc2 + 0] + data[pc2 + 2]) * 0.5;
-                    mix_right = (data[pc2 + 1] + data[pc2 + 3]) * 0.5;
-                    pc += 2;
-                } else {
-                    //1:1 mix
-                    mix_left  = data[pc2 + 0];
-                    mix_right = data[pc2 + 1];
-                    pc += 1;
-                }
-                if (upkeep_looping && pc >= inst->loop_b)
-                    pc -= inst->loop_b - inst->loop_a;
-                    inst->loop_count += 1;*/
-            } else {
-                //TODO: sound data done; mark instance as dying                
             }
-            
-            TertiaryBuffer[sample*2 + 0] = (int16_t)(32767.0 * mix_left);
-            TertiaryBuffer[sample*2 + 1] = (int16_t)(32767.0 * mix_right);
+        } else*/ {
+            stride = (int)floorpo2(inst->pitch);
+                
+            REPEAT(sample,samples) {
+                mix_left = 0;
+                mix_right = 0;
+                
+                if (pc<length) {                
+                    REPEAT(stride) {
+                        mix_left  += data[pc*2 + 0];
+                        mix_right += data[pc*2 + 1];
+                        pc += 1;
+                        
+                        //TODO: backward direction logic
+                        if (upkeep_looping && pc >= inst->loop_b) {
+                            pc = inst->loop_a;
+                            inst->loop_count += 1;
+                        }
+                    }
+                    
+                    mix_left /= stride;
+                    mix_right /= stride; 
+                } else {
+                    //TODO: sound data done; mark instance as dying                
+                }
+                
+                TertiaryBuffer[sample*2 + 0] = (int16_t)(32767.0 * mix_left);
+                TertiaryBuffer[sample*2 + 1] = (int16_t)(32767.0 * mix_right);
+            }
         }
         inst->play_cursor = pc;
         
